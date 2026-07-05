@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EMA: Elderly Medical Assistant</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@500;600;700&display=swap"
+    rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
+    rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/style.css">
+  <!-- marked.js: lightweight Markdown renderer for agent chat bubbles -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="/static/js/app.js" type="module"></script>
+</head>
+
+<body>
+  <header class="minimized">
+    <h1>EMA: Elderly Medical Assistant</h1>
+    <div class="subtitle">Gen AI Academy APAC Edition: Protoype Submission - Muhammad Ku Sukry bin Muhammad Mustafa (kusyuk@gmail.com)
+    </div>
+    <div class="subtitle">While EMA (cohort 1) focus on assistant for elderly patients, EMA Grid will focus on providing decision intelligence for healthcare professionals. Helping the hospital, medical officers and public health workers to make informed decisions based on real-time data gained from EMA. </div>
+    <div class="header-options">
+      <button id="ttsToggle" class="tts-toggle active" title="Toggle voice output" aria-label="Toggle voice output">
+        <span class="material-symbols-rounded">volume_up</span>
+        <span class="tts-label">Voice On</span>
+      </button>
+      <button id="toggleHeaderBtn" class="tts-toggle" title="Expand Header" aria-label="Expand Header">
+        <span class="material-symbols-rounded" id="toggleHeaderIcon">keyboard_arrow_down</span>
+      </button>
+    </div>
+    <div class="connection-status">
+      <span class="status-indicator" id="statusIndicator"></span>
+      <span id="statusText">Connecting...</span>
+    </div>
+  </header>
+
+  <!-- Notification Banner: driven by calendar_watchdog via /notifications API -->
+  <div id="notificationBanner" class="notification-banner" style="display:none;">
+    <div class="notification-content">
+      <span class="material-symbols-rounded notification-icon">notifications_active</span>
+      <div class="notification-text">
+        <strong id="notificationTitle">Reminder</strong>
+        <span id="notificationMessage"></span>
+      </div>
+      <span class="notification-demo-badge">LIVE DEMO</span>
+    </div>
+    <button id="dismissNotification" class="notification-dismiss" title="Dismiss">
+      <span class="material-symbols-rounded">close</span>
+    </button>
+  </div>
+
+  <div class="main-layout">
+    <!-- LEFT PANEL: EMA Patient Assistant + Bottom Console -->
+    <div class="patient-panel">
+      <div class="panel-header">
+        <span class="material-symbols-rounded">person</span>
+        <h2>EMA Patient Assistant</h2>
+      </div>
+      
+      <div class="container">
+        <div id="messages"></div>
+
+        <div class="input-container">
+          <form id="messageForm">
+            <div class="message-input-col">
+              <div class="input-wrapper">
+                <input type="text" id="message" name="message" placeholder="Type your message here..."
+                  autocomplete="off" />
+                <button type="button" id="uploadPhotoButton" title="Upload a photo from device">
+                  <span class="material-symbols-rounded">image</span>
+                </button>
+                <button type="button" id="addPhotoButton" title="Take a photo with camera">
+                  <span class="material-symbols-rounded">photo_camera</span>
+                </button>
+                <button type="button" id="startAudioButton" title="Toggle microphone">
+                  <span class="material-symbols-rounded">mic</span>
+                </button>
+                <button type="submit" id="sendButton" title="Send message" disabled>
+                  <span class="material-symbols-rounded">send</span>
+                </button>
+              </div>
+              <input type="file" id="imageUpload" accept="image/*" style="display: none;">
+              <div id="imagePreviewContainer" class="image-preview-container" style="display: none;">
+                <div class="preview-wrapper">
+                  <img id="imagePreview" src="" alt="Preview">
+                  <button type="button" id="removeImage" class="remove-image-btn">&times;</button>
+                </div>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- RIGHT PANEL: EMA Grid Decision Intelligence Platform -->
+    <div class="grid-panel">
+      <div class="panel-header">
+        <span class="material-symbols-rounded">analytics</span>
+        <h2>EMA Grid Decision Console</h2>
+      </div>
+
+      <div class="grid-dashboard">
+        <div class="dashboard-widgets">
+          <div class="widget hotspot-widget">
+            <h3>Outbreak Hotspots (BigQuery)</h3>
+            <div id="hotspotList" class="widget-content">Loading BigQuery metrics...</div>
+          </div>
+          <div class="widget alerts-widget">
+            <h3>Staffing & Resource Alerts</h3>
+            <div id="alertList" class="widget-content">Loading staffing rules...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Decision Agent Chat -->
+      <div class="grid-chat-container">
+        <div class="panel-header chat-header">
+          <span class="material-symbols-rounded">smart_toy</span>
+          <h3>Decision Support Agent</h3>
+        </div>
+        <div id="gridMessages"></div>
+        <div class="grid-input-container">
+          <form id="gridMessageForm">
+            <input type="text" id="gridMessage" placeholder="Ask the Grid Agent about outbreaks or resource allocation..." autocomplete="off">
+            <button type="submit" id="gridSendButton" title="Send query">
+              <span class="material-symbols-rounded">send</span>
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Docked Console Panel -->
+  <div class="console-panel collapsed">
+    <div class="console-header">
+      <div class="console-tabs">
+        <button class="console-tab-btn active" id="patientConsoleTab">Patient Console</button>
+        <button class="console-tab-btn" id="gridConsoleTab">Grid Console</button>
+      </div>
+      <div class="console-controls">
+        <label class="console-checkbox">
+          <input type="checkbox" id="showAudioEvents">
+          <span>Show audio</span>
+        </label>
+        <button id="clearConsole" class="console-clear-btn">Clear</button>
+        <button id="toggleConsoleBtn" class="console-toggle-btn" title="Toggle Console">
+          <span class="material-symbols-rounded" id="toggleConsoleIcon">keyboard_arrow_up</span>
+        </button>
+      </div>
+    </div>
+    <div id="consoleContent" class="console-content"></div>
+  </div>
+
+  <!-- Camera Preview Modal -->
+  <div id="cameraModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Camera Preview</h3>
+        <button id="closeCameraModal" class="close-btn">&times;</button>
+      </div>
+      <div class="modal-body">
+        <video id="cameraPreview" autoplay playsinline></video>
+      </div>
+      <div class="modal-footer">
+        <button id="cancelCamera" class="btn-secondary">Cancel</button>
+        <button id="captureImage" class="btn-primary">📷 Capture</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Project Intro Modal Dialog -->
+  <div id="introModal" class="modal" style="display: flex; align-items: center; justify-content: center;">
+    <div class="modal-content intro-modal-content">
+      <div class="modal-header">
+        <div style="display: flex; align-items: center;">
+          <span class="material-symbols-rounded" style="color: #667eea; font-size: 28px; margin-right: 0.5rem;">explore</span>
+          <h3 id="introModalTitle">Welcome to EMA Grid</h3>
+        </div>
+        <button id="closeIntroModal" class="close-btn">&times;</button>
+      </div>
+      <div class="modal-body intro-modal-body" style="padding: 2rem;">
+        
+        <!-- Slide 1: Welcome & Continuity -->
+        <div class="intro-slide active" id="slide1">
+          <h4 class="slide-subtitle">Project Brief & Continuity</h4>
+          <p><strong>EMA Grid</strong> is an advanced, decision-intelligence expansion of our Cohort 1 prototype, <strong>EMA (Elderly Medical Assistant)</strong>.</p>
+          <p style="margin-top: 1rem;">While EMA focus on assistant for elderly patients, EMA Grid focus on providing decision intelligence for healthcare professionals. Helping the hospital, 
+            medical officers and public health workers to make informed decisions based on real-time data gained from EMA. For this demo I include EMA and EMA Grid side by side to show the continuity and integration of the two.</p>
+        </div>
+        
+        <!-- Slide 2: Two-Side UI Split -->
+        <div class="intro-slide" id="slide2">
+          <h4 class="slide-subtitle">FOR DEMO PURPOSED: Symmetrical 2-Side Interface</h4>
+          <div class="intro-split-desc">
+            <div class="desc-col">
+              <span class="material-symbols-rounded">person</span>
+              <h4>Left Side: Patient Assistant</h4>
+              <p>Simulates the patient app. Report symptoms via text, voice, or camera capture, and manage care schedules.</p>
+            </div>
+            <div class="desc-col">
+              <span class="material-symbols-rounded">analytics</span>
+              <h4>Right Side: Grid Console</h4>
+              <p>Simulates the healthcare official console. Inspect live outbreak hotspots, staffing alerts, and query data with the BQ Decision Agent.</p>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Slide 3: Outbreak Pipeline -->
+        <div class="intro-slide" id="slide3">
+          <h4 class="slide-subtitle">Live Outbreak Telemetry Pipeline</h4>
+          <p>To demonstrate the intelligence platform, we created a live data pipeline:</p>
+          <div class="intro-pipeline-tip" style="margin-top: 1rem;">
+            <span class="material-symbols-rounded" style="color: #ea4335; font-size: 24px;">info</span>
+            <p style="color: #3c4043;">When you send a symptom report on the Patient side (e.g. <i>"I have high fever and respiratory problems"</i>), the agent registers it, writes it directly into BigQuery, and the Grid dashboard updates its case counts in real time!</p>
+          </div>
+        </div>
+        
+      </div>
+      <div class="modal-footer" style="justify-content: space-between; align-items: center; padding: 1.25rem 2rem;">
+        <div class="slide-indicators">
+          <span class="dot active" data-slide="0"></span>
+          <span class="dot" data-slide="1"></span>
+          <span class="dot" data-slide="2"></span>
+        </div>
+        <div style="display: flex; gap: 0.75rem;">
+          <button id="prevSlideBtn" class="btn-secondary" style="display: none; padding: 0.5rem 1rem;">Back</button>
+          <button id="nextSlideBtn" class="btn-primary" style="padding: 0.5rem 1.5rem; min-width: 100px; border-radius: 8px;">Next</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+
+</html>

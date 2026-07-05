@@ -1,0 +1,9 @@
+.agent-memory
+.git
+.venv
+.dockerignore
+.env
+.gcloudignore
+__pycache__/
+documentation/
+scratch/

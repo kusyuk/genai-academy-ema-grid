@@ -1,0 +1,25 @@
+# Core Agent Framework
+google-adk==1.17.0
+toolbox-core
+
+# Google AI and Cloud SDKs
+google-genai>=0.1.0
+google-cloud-firestore
+google-cloud-bigquery
+google-cloud-logging
+google-cloud-texttospeech
+google-auth
+google-api-python-client
+
+# API and Server
+fastapi
+uvicorn[standard]
+pydantic
+httpx
+
+# Utilities
+python-dotenv
+langchain-community==0.3.27
+wikipedia==1.4.0
+aiofiles
+python-multipart

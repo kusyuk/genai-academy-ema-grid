@@ -1,0 +1,34 @@
+steps:
+  # Build the container image
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', 'gcr.io/$PROJECT_ID/$_SERVICE_NAME', '.']
+
+  # Push the container image to Container Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/$PROJECT_ID/$_SERVICE_NAME']
+
+  # Deploy container image to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - '$_SERVICE_NAME'
+      - '--image'
+      - 'gcr.io/$PROJECT_ID/$_SERVICE_NAME'
+      - '--region'
+      - '$_LOCATION'
+      - '--platform'
+      - 'managed'
+      - '--allow-unauthenticated'
+      - '--set-env-vars'
+      - 'PROJECT_ID=$PROJECT_ID,LOCATION=$_LOCATION,CALENDAR_ID=$_CALENDAR_ID,DOCUMENT_ID=$_DOCUMENT_ID'
+
+images:
+  - 'gcr.io/$PROJECT_ID/$_SERVICE_NAME'
+
+substitutions:
+  _SERVICE_NAME: 'ema-assistant'
+  _LOCATION: 'asia-southeast1'
+  _CALENDAR_ID: 'primary'
+  _DOCUMENT_ID: '' # User should provide this via --substitutions
