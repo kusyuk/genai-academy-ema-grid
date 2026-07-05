@@ -12,25 +12,43 @@ The project documentation for **EMA - Elderly Medical Assistant** is detailed be
 
 To make judging as frictionless as possible, EMA is hosted live. **You do not need to install anything, configure APIs, or set up credentials.**
 
+### Dual-Panel Onboarding
+When you load the app, you will be greeted by an **interactive Welcome Wizard** that introduces the project continuity from Cohort 1 to Cohort 2 and details the two-sided layout:
+* **Left Panel**: The patient-facing assistant (EMA) where the user interacts via text, uploaded medical notes, or speech.
+* **Right Panel**: The official Decision Support console (EMA Grid) presenting regional outbreak heatmaps, predictive staffing notifications, and a conversational data-analytics agent.
+
 ### How to test:
-EMA is fully integrated into the Google Workspace ecosystem (Docs, Tasks, Calendar). The best way to experience the multimodal features is to watch it control these services in real-time.
+EMA is fully integrated into the Google Workspace ecosystem (Docs, Tasks, Calendar) and Google Cloud BigQuery. The best way to experience the system's capabilities is to watch the interaction update these services in real-time.
 
-1. **Open the Live App:**
-2. **Open the Family Journal (Google Doc):** https://docs.google.com/document/d/14rNKzVnwmrOJ_1HPHrxB5CpvGt7ndzip27lQo5V5zqM/edit?usp=sharing
-3. **Open the Appointment Calendar (Google Calendar):** https://calendar.google.com/calendar/u/2?cid=MmExZjI4OTU4N2I3NGU5ODI1NGQ5YjBkZjJlNmEzYjc2OTMwZDg2OTZkMDFlYjBiZjM1MjE0NGY3MzNhZjY4MkBncm91cC5jYWxlbmRhci5nb29nbGUuY29t
+1. **Open the Live App:** `[Provide Deployed Cloud Run URL here]`
+2. **Open the Family Journal (Google Doc):** [Family Journal Doc](https://docs.google.com/document/d/14rNKzVnwmrOJ_1HPHrxB5CpvGt7ndzip27lQo5V5zqM/edit?usp=sharing)
+3. **Open the Appointment Calendar (Google Calendar):** [Appointment Calendar](https://calendar.google.com/calendar/u/2?cid=MmExZjI4OTU4N2I3NGU5ODI1NGQ5YjBkZjJlNmEzYjc2OTMwZDg2OTZkMDFlYjBiZjM1MjE0NGY3MzNhZjY4MkBncm91cC5jYWxlbmRhci5nb29nbGUuY29t)
 
+---
 
-### Try these prompts:
-* **Patient Assistant (EMA - Left Panel)**:
-  - **Profile Fetching:** *"Hi, I am Ahmad. Can you remind me of my current conditions?"*
-  - **Action Execution:** *"Can you schedule my next follow-up appointment for next Tuesday at 10 AM?"* (Watch the Google Calendar update live!)
-  - **Family Syncing:** *"Please update my family members and save a summary of my condition to the journal."* (Watch the Google Doc update live!)
-  - **Vision AI:** Upload the sample medical note from the repo (`test_assets/ema-medical-note.jpg` and `test_assets/ema-medical-prescription.jpg`) and ask: *"Can you explain what this note says in simple terms?"*
-* **Decision Support Console (EMA Grid - Right Panel)**:
-  - **Outbreak Trends Query:** *"analyze recent health trends in the North District"* (Watch the Grid Agent query BigQuery and render stats instantly!)
-  - **Outbreak Severity Query:** *"where are the cardiac outbreaks located?"*
+### Try these interactive scenarios:
 
-*(Note on Google Tasks: Because Google Tasks enforces strict privacy and does not support public sharing links, tasks are securely generated and stored in the backend Service Account's private task list. You can verify execution success via the agent's conversational response!)*
+#### Scenario A: Patient Onboarding & Profile Load (Left Panel)
+*   **Prompt**: *"Hi, I am Ahmad. Can you remind me of my current conditions?"*
+*   **Verification**: EMA loads Ahmad's medical records from Cloud Firestore (age, conditions, medications, allergies) and reads the greeting aloud using Google Cloud TTS.
+
+#### Scenario B: Automated Scheduling (Left Panel)
+*   **Prompt**: *"Can you schedule my next follow-up appointment for next Tuesday at 10 AM?"*
+*   **Verification**: The agent schedules the event in **Google Calendar** using the Service Account. Watch the [Appointment Calendar](https://calendar.google.com/calendar/u/2?cid=MmExZjI4OTU4N2I3NGU5ODI1NGQ5YjBkZjJlNmEzYjc2OTMwZDg2OTZkMDFlYjBiZjM1MjE0NGY3MzNhZjY4MkBncm91cC5jYWxlbmRhci5nb29nbGUuY29t) link update live in another tab!
+
+#### Scenario C: Family Journal Syncing (Left Panel)
+*   **Prompt**: *"Please update my family members and save a summary of my condition to the journal."*
+*   **Verification**: The agent compiles a compassionate summary of Ahmad's conditions and appends it to the [Family Journal Doc](https://docs.google.com/document/d/14rNKzVnwmrOJ_1HPHrxB5CpvGt7ndzip27lQo5V5zqM/edit?usp=sharing) link.
+
+#### Scenario D: Vision AI Prescription Parser (Left Panel)
+*   **Action**: Click the camera icon or upload button to send `test_assets/ema-medical-prescription.jpg` or `test_assets/ema-medical-note.jpg` and ask: *"Can you explain what this note says?"*
+*   **Verification**: The agent processes the image using Gemini Vision, translates clinical jargon into layman terms, and schedules new medication tasks in the backend.
+
+#### Scenario E: Outbreak Telemetry & Decision Support (Right Panel)
+*   **Prompt**: *"analyze recent health trends in the North District"*
+*   **Verification**: The **Grid Decision Agent** queries the anonymized telemetry symptoms in **Google Cloud BigQuery** on the fly, renders a case count table, and recommends emergency nursing reallocations based on the threshold counts.
+
+*(Note on Google Tasks: Because Google Tasks enforces strict privacy and does not support public sharing links, tasks are securely generated and stored in the backend Service Account's private task list. You can verify execution success via the agent's conversational response!)*nse!)*
 
 ---
 
