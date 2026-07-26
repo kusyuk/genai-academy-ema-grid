@@ -23,7 +23,8 @@ const messageInput = document.getElementById("message");
 const messagesDiv = document.getElementById("messages");
 const statusIndicator = document.getElementById("statusIndicator");
 const statusText = document.getElementById("statusText");
-const consoleContent = document.getElementById("consoleContent");
+const patientConsoleContent = document.getElementById("patientConsoleContent");
+const gridConsoleContent = document.getElementById("gridConsoleContent");
 const clearConsoleBtn = document.getElementById("clearConsole");
 const showAudioEventsCheckbox = document.getElementById("showAudioEvents");
 let currentMessageId = null;
@@ -64,7 +65,6 @@ function formatTimestamp() {
 
 let patientConsoleEntries = [];
 let gridConsoleEntries = [];
-let activeConsoleTab = 'patient';
 
 function addConsoleEntry(type, content, data = null, emoji = null, author = null, isAudio = false, isGrid = false) {
   const newEntry = {
@@ -83,134 +83,113 @@ function addConsoleEntry(type, content, data = null, emoji = null, author = null
   } else {
     patientConsoleEntries.push(newEntry);
   }
-
-  if ((isGrid && activeConsoleTab === 'grid') || (!isGrid && activeConsoleTab === 'patient')) {
-    renderConsole();
-  }
+  renderConsole();
 }
 
 function renderConsole() {
-  consoleContent.innerHTML = '';
-  const entries = activeConsoleTab === 'patient' ? patientConsoleEntries : gridConsoleEntries;
+  if (patientConsoleContent) patientConsoleContent.innerHTML = '';
+  if (gridConsoleContent) gridConsoleContent.innerHTML = '';
 
-  entries.forEach(entry => {
-    if (entry.isAudio && !showAudioEventsCheckbox.checked) {
-      return;
-    }
+  patientConsoleEntries.forEach(entry => renderEntry(entry, patientConsoleContent));
+  gridConsoleEntries.forEach(entry => renderEntry(entry, gridConsoleContent));
+  
+  if (patientConsoleContent) patientConsoleContent.scrollTop = patientConsoleContent.scrollHeight;
+  if (gridConsoleContent) gridConsoleContent.scrollTop = gridConsoleContent.scrollHeight;
+}
 
-    const entryEl = document.createElement("div");
-    entryEl.className = `console-entry ${entry.type}`;
+function renderEntry(entry, container) {
+  if (!container) return;
+  if (entry.isAudio && !showAudioEventsCheckbox.checked) {
+    return;
+  }
 
-    const header = document.createElement("div");
-    header.className = "console-entry-header";
+  const entryEl = document.createElement("div");
+  entryEl.className = `console-entry ${entry.type}`;
 
-    const leftSection = document.createElement("div");
-    leftSection.className = "console-entry-left";
+  const header = document.createElement("div");
+  header.className = "console-entry-header";
 
-    if (entry.emoji) {
-      const emojiIcon = document.createElement("span");
-      emojiIcon.className = "console-entry-emoji";
-      emojiIcon.textContent = entry.emoji;
-      leftSection.appendChild(emojiIcon);
-    }
+  const leftSection = document.createElement("div");
+  leftSection.className = "console-entry-left";
 
-    const expandIcon = document.createElement("span");
-    expandIcon.className = "console-expand-icon";
-    expandIcon.textContent = entry.data ? "▶" : "";
+  if (entry.emoji) {
+    const emojiIcon = document.createElement("span");
+    emojiIcon.className = "console-entry-emoji";
+    emojiIcon.textContent = entry.emoji;
+    leftSection.appendChild(emojiIcon);
+  }
 
-    const typeLabel = document.createElement("span");
-    typeLabel.className = "console-entry-type";
-    typeLabel.textContent = entry.type === 'outgoing' ? '↑ Upstream' : entry.type === 'incoming' ? '↓ Downstream' : '⚠ Error';
+  const expandIcon = document.createElement("span");
+  expandIcon.className = "console-expand-icon";
+  expandIcon.textContent = entry.data ? "▶" : "";
 
-    leftSection.appendChild(expandIcon);
-    leftSection.appendChild(typeLabel);
+  const typeLabel = document.createElement("span");
+  typeLabel.className = "console-entry-type";
+  typeLabel.textContent = entry.type === 'outgoing' ? '↑ Upstream' : entry.type === 'incoming' ? '↓ Downstream' : '⚠ Error';
 
-    if (entry.author) {
-      const authorBadge = document.createElement("span");
-      authorBadge.className = "console-entry-author";
-      authorBadge.textContent = entry.author;
-      authorBadge.setAttribute('data-author', entry.author);
-      leftSection.appendChild(authorBadge);
-    }
+  leftSection.appendChild(expandIcon);
+  leftSection.appendChild(typeLabel);
 
-    const timestamp = document.createElement("span");
-    timestamp.className = "console-entry-timestamp";
-    timestamp.textContent = entry.timestamp;
+  if (entry.author) {
+    const authorBadge = document.createElement("span");
+    authorBadge.className = "console-entry-author";
+    authorBadge.textContent = entry.author;
+    authorBadge.setAttribute('data-author', entry.author);
+    leftSection.appendChild(authorBadge);
+  }
 
-    header.appendChild(leftSection);
-    header.appendChild(timestamp);
+  const timestamp = document.createElement("span");
+  timestamp.className = "console-entry-timestamp";
+  timestamp.textContent = entry.timestamp;
 
-    const contentDiv = document.createElement("div");
-    contentDiv.className = "console-entry-content";
-    contentDiv.textContent = entry.content;
+  header.appendChild(leftSection);
+  header.appendChild(timestamp);
 
-    entryEl.appendChild(header);
-    entryEl.appendChild(contentDiv);
+  const contentDiv = document.createElement("div");
+  contentDiv.className = "console-entry-content";
+  contentDiv.textContent = entry.content;
 
-    if (entry.data) {
-      const jsonDiv = document.createElement("div");
-      jsonDiv.className = "console-entry-json collapsed";
-      const pre = document.createElement("pre");
-      pre.textContent = JSON.stringify(entry.data, null, 2);
-      jsonDiv.appendChild(pre);
-      entryEl.appendChild(jsonDiv);
+  entryEl.appendChild(header);
+  entryEl.appendChild(contentDiv);
 
-      entryEl.classList.add("expandable");
+  if (entry.data) {
+    const jsonDiv = document.createElement("div");
+    jsonDiv.className = "console-entry-json collapsed";
+    const pre = document.createElement("pre");
+    pre.textContent = JSON.stringify(entry.data, null, 2);
+    jsonDiv.appendChild(pre);
+    entryEl.appendChild(jsonDiv);
 
-      entryEl.addEventListener("click", () => {
-        const isExpanded = !jsonDiv.classList.contains("collapsed");
-        if (isExpanded) {
-          jsonDiv.classList.add("collapsed");
-          expandIcon.textContent = "▶";
-          entryEl.classList.remove("expanded");
-        } else {
-          jsonDiv.classList.remove("collapsed");
-          expandIcon.textContent = "▼";
-          entryEl.classList.add("expanded");
-        }
-      });
-    }
+    entryEl.classList.add("expandable");
 
-    consoleContent.appendChild(entryEl);
-  });
+    entryEl.addEventListener("click", () => {
+      const isExpanded = !jsonDiv.classList.contains("collapsed");
+      if (isExpanded) {
+        jsonDiv.classList.add("collapsed");
+        expandIcon.textContent = "▶";
+        entryEl.classList.remove("expanded");
+      } else {
+        jsonDiv.classList.remove("collapsed");
+        expandIcon.textContent = "▼";
+        entryEl.classList.add("expanded");
+      }
+    });
+  }
 
-  consoleContent.scrollTop = consoleContent.scrollHeight;
+  container.appendChild(entryEl);
 }
 
 function clearConsole() {
-  if (activeConsoleTab === 'patient') {
-    patientConsoleEntries = [];
-  } else {
-    gridConsoleEntries = [];
-  }
+  patientConsoleEntries = [];
+  gridConsoleEntries = [];
   renderConsole();
 }
 
 // Clear console button handler
-clearConsoleBtn.addEventListener('click', clearConsole);
+if (clearConsoleBtn) clearConsoleBtn.addEventListener('click', clearConsole);
 
 // Show audio checkbox changes should re-render
-showAudioEventsCheckbox.addEventListener('change', renderConsole);
-
-// Tabs click handlers
-const patientConsoleTab = document.getElementById("patientConsoleTab");
-const gridConsoleTab = document.getElementById("gridConsoleTab");
-
-if (patientConsoleTab && gridConsoleTab) {
-  patientConsoleTab.addEventListener("click", () => {
-    activeConsoleTab = 'patient';
-    patientConsoleTab.classList.add("active");
-    gridConsoleTab.classList.remove("active");
-    renderConsole();
-  });
-
-  gridConsoleTab.addEventListener("click", () => {
-    activeConsoleTab = 'grid';
-    gridConsoleTab.classList.add("active");
-    patientConsoleTab.classList.remove("active");
-    renderConsole();
-  });
-}
+if (showAudioEventsCheckbox) showAudioEventsCheckbox.addEventListener('change', renderConsole);
 
 // Update connection status UI
 function updateConnectionStatus(connected) {
@@ -387,6 +366,21 @@ function connectWebsocket() {
     const adkEvent = JSON.parse(event.data);
     console.log("[AGENT TO CLIENT] ", adkEvent);
 
+    if (adkEvent.type === "telemetry_stream") {
+      console.log("⚡ [TELEMETRY BRIDGE EVENT RECEIVED]", adkEvent);
+      const data = adkEvent.data || {};
+      const summaryMsg = `⚡ TELEMETRY BRIDGE: Streamed patient report (${data.region || 'North District'} | ${data.symptom_cluster || 'Respiratory'} | ${data.severity || 'Medium'}) -> BigQuery ema_grid.symptom_reports`;
+      
+      // Patient Console
+      addConsoleEntry('incoming', summaryMsg, data, '⚡', 'telemetry_bridge', false, false);
+      
+      // Grid Console
+      addConsoleEntry('incoming', `📊 [EMA GRID LIVE SYNC] BigQuery ema_grid.symptom_reports ingested telemetry. Regional surge alert updated for ${data.region || 'North District'}.`, data, '📊', 'ema_grid', false, true);
+      
+      triggerTelemetryPulse();
+      return;
+    }
+
     // Log to console panel
     let eventSummary = 'Event';
     let eventEmoji = '📨'; // Default emoji
@@ -505,6 +499,9 @@ function connectWebsocket() {
 
     // Handle turn complete event
     if (adkEvent.turnComplete === true) {
+      const sendBtn = document.getElementById("sendButton");
+      if (sendBtn) sendBtn.disabled = false;
+      removeThinkingIndicator();
       // Safely finalize the current bubble (remove typing indicator)
       if (currentBubbleElement) {
         const indicator = currentBubbleElement.querySelector('.typing-indicator');
@@ -832,6 +829,9 @@ function addSubmitHandler() {
 
 // Send a message to the server as JSON
 function sendMessage(message) {
+  if (message !== "__START_SESSION__") {
+    triggerTelemetryPulse();
+  }
   if (websocket && websocket.readyState == WebSocket.OPEN) {
     if (currentBubbleElement) {
       const indicator = currentBubbleElement.querySelector('.typing-indicator');
@@ -881,6 +881,8 @@ function sendMessage(message) {
         hasImage ? "Analyzing your prescription..." : "EMA is thinking"
       );
     }
+    const sendBtn = document.getElementById("sendButton");
+    if (sendBtn) sendBtn.disabled = true;
   }
 }
 
@@ -982,6 +984,51 @@ function removeThinkingIndicator() {
   if (thinkingIndicatorElement) {
     thinkingIndicatorElement.remove();
     thinkingIndicatorElement = null;
+  }
+}
+
+let gridThinkingIndicatorElement = null;
+
+function showGridThinkingIndicator(message = "Grid Agent is analyzing data...") {
+  if (gridThinkingIndicatorElement) return;
+
+  gridThinkingIndicatorElement = document.createElement("div");
+  gridThinkingIndicatorElement.className = "message agent thinking";
+
+  const bubbleDiv = document.createElement("div");
+  bubbleDiv.className = "bubble";
+
+  const contentWrapper = document.createElement("div");
+  contentWrapper.style.display = "flex";
+  contentWrapper.style.alignItems = "center";
+  contentWrapper.style.gap = "0.75rem";
+
+  const textSpan = document.createElement("span");
+  textSpan.className = "thinking-label";
+  textSpan.textContent = message;
+
+  const dotsDiv = document.createElement("div");
+  dotsDiv.className = "thinking-dots";
+
+  for (let i = 0; i < 3; i++) {
+    const dot = document.createElement("span");
+    dot.className = "thinking-dot";
+    dotsDiv.appendChild(dot);
+  }
+
+  contentWrapper.appendChild(textSpan);
+  contentWrapper.appendChild(dotsDiv);
+  bubbleDiv.appendChild(contentWrapper);
+  gridThinkingIndicatorElement.appendChild(bubbleDiv);
+
+  gridMessagesDiv.appendChild(gridThinkingIndicatorElement);
+  scrollGridToBottom();
+}
+
+function removeGridThinkingIndicator() {
+  if (gridThinkingIndicatorElement) {
+    gridThinkingIndicatorElement.remove();
+    gridThinkingIndicatorElement = null;
   }
 }
 
@@ -1532,6 +1579,10 @@ function connectGridWebsocket() {
     console.log("Grid WebSocket connection opened.");
     addGridSystemMessage("Connected to EMA Grid Decision Server");
     addConsoleEntry('incoming', 'Grid WebSocket Connected', { url: ws_url }, '🔌', 'system', false, true);
+    
+    const gridSendBtn = document.getElementById("gridSendButton");
+    if (gridSendBtn) gridSendBtn.disabled = false;
+
     gridWebsocket.send(JSON.stringify({
       type: "text",
       text: "__START_SESSION__"
@@ -1571,6 +1622,9 @@ function connectGridWebsocket() {
     addConsoleEntry('incoming', eventSummary, adkEvent, eventEmoji, author, false, true);
     
     if (adkEvent.turnComplete) {
+      removeGridThinkingIndicator();
+      const gridSendBtn = document.getElementById("gridSendButton");
+      if (gridSendBtn) gridSendBtn.disabled = false;
       if (currentGridBubbleElement) {
         const prevIndicator = currentGridBubbleElement.querySelector('.typing-indicator');
         if (prevIndicator) prevIndicator.remove();
@@ -1620,6 +1674,11 @@ function connectGridWebsocket() {
     console.log("Grid WebSocket connection closed. Retrying in 5 seconds...");
     addGridSystemMessage("Disconnected from Grid Server. Reconnecting...");
     addConsoleEntry('error', 'Grid WebSocket Disconnected', {}, '🔌', 'system', false, true);
+    
+    removeGridThinkingIndicator();
+    const gridSendBtn = document.getElementById("gridSendButton");
+    if (gridSendBtn) gridSendBtn.disabled = true;
+
     setTimeout(connectGridWebsocket, 5000);
   };
 }
@@ -1668,9 +1727,16 @@ if (gridMessageForm) {
         type: "text",
         text: message
       }));
+      
+      const gridSendBtn = document.getElementById("gridSendButton");
+      if (gridSendBtn) gridSendBtn.disabled = true;
+      showGridThinkingIndicator();
     }
   };
 }
+
+const suppliesListDiv = document.getElementById("suppliesList");
+const hospitalListDiv = document.getElementById("hospitalList");
 
 // Polling BigQuery dashboard metrics
 async function pollDashboard() {
@@ -1701,6 +1767,38 @@ async function pollDashboard() {
       `).join("");
     } else {
       alertListDiv.innerHTML = "All regions staffing stable.";
+    }
+
+    // Render Medical Supplies
+    if (suppliesListDiv) {
+      if (data.supplies && data.supplies.length > 0) {
+        suppliesListDiv.innerHTML = data.supplies.slice(0, 5).map(item => `
+          <div class="hotspot-item" style="border-left: 3px solid ${item.supply_status === 'CRITICAL_SHORTAGE' ? '#ea4335' : item.supply_status === 'LOW' ? '#fbbc04' : '#34a853'}; padding-left: 0.5rem; margin-bottom: 0.35rem;">
+            <span class="hotspot-region" style="font-size: 0.78rem;">${item.region} - ${item.item_name}</span>
+            <span class="hotspot-cases" style="background: ${item.supply_status === 'CRITICAL_SHORTAGE' ? '#fce8e6' : '#e6f4ea'}; color: ${item.supply_status === 'CRITICAL_SHORTAGE' ? '#c5221f' : '#137333'}; font-weight: 600; font-size: 0.75rem;">
+              ${item.current_stock} (${item.days_of_supply}d)
+            </span>
+          </div>
+        `).join("");
+      } else {
+        suppliesListDiv.innerHTML = "No medical supply data.";
+      }
+    }
+
+    // Render Hospital Bed Capacity
+    if (hospitalListDiv) {
+      if (data.hospitals && data.hospitals.length > 0) {
+        hospitalListDiv.innerHTML = data.hospitals.slice(0, 5).map(item => `
+          <div class="hotspot-item" style="border-left: 3px solid ${item.occupancy_rate_pct > 90 ? '#ea4335' : '#4285f4'}; padding-left: 0.5rem; margin-bottom: 0.35rem;">
+            <span class="hotspot-region" style="font-size: 0.78rem;">${item.facility_name}</span>
+            <span class="hotspot-cases" style="background: ${item.occupancy_rate_pct > 90 ? '#fce8e6' : '#e8f0fe'}; color: ${item.occupancy_rate_pct > 90 ? '#c5221f' : '#1a73e8'}; font-weight: 600; font-size: 0.75rem;">
+              ${item.occupancy_rate_pct}% Occ (ICU: ${item.icu_beds_occupied}/${item.icu_beds_total})
+            </span>
+          </div>
+        `).join("");
+      } else {
+        hospitalListDiv.innerHTML = "No hospital capacity data.";
+      }
     }
   } catch (e) {
     console.error("Error polling dashboard:", e);
@@ -1798,6 +1896,16 @@ function showSlide(idx) {
 if (introModal) {
   const closeModal = () => {
     introModal.style.display = "none";
+    
+    // Auto expand walkthrough widget for first time setup
+    const widget = document.getElementById("demoWalkthroughWidget");
+    const toggleIcon = document.getElementById("toggleDemoWidgetIcon");
+    const toggleBtn = document.getElementById("toggleDemoWidgetBtn");
+    if (widget) {
+      widget.classList.remove("collapsed");
+      if (toggleIcon) toggleIcon.textContent = "keyboard_arrow_down";
+      if (toggleBtn) toggleBtn.title = "Collapse Demo Walkthrough";
+    }
   };
   
   if (closeIntroModal) {
@@ -1836,3 +1944,357 @@ if (introModal) {
     }
   });
 }
+
+// ==========================================================================
+// HACKATHON HERO UI CONTROLLERS (View Switcher, Demo Presets & Telemetry Pulse)
+// ==========================================================================
+
+function triggerTelemetryPulse() {
+  const telemetryBadge = document.getElementById("telemetryBadge");
+  const hotspotWidget = document.querySelector(".hotspot-widget");
+
+  if (telemetryBadge) {
+    telemetryBadge.style.transform = "scale(1.15)";
+    telemetryBadge.style.boxShadow = "0 0 14px rgba(16, 185, 129, 0.7)";
+    setTimeout(() => {
+      telemetryBadge.style.transform = "scale(1)";
+      telemetryBadge.style.boxShadow = "";
+    }, 1000);
+  }
+
+  if (hotspotWidget) {
+    hotspotWidget.classList.add("telemetry-flash");
+    setTimeout(() => {
+      hotspotWidget.classList.remove("telemetry-flash");
+    }, 2400);
+  }
+}
+
+function initProjectInfoDrawer() {
+  const toggleInfoBtn = document.getElementById("toggleInfoBtn");
+  const projectInfoDrawer = document.getElementById("projectInfoDrawer");
+
+  if (toggleInfoBtn && projectInfoDrawer) {
+    toggleInfoBtn.addEventListener("click", () => {
+      const isVisible = projectInfoDrawer.style.display !== "none";
+      projectInfoDrawer.style.display = isVisible ? "none" : "block";
+      toggleInfoBtn.style.backgroundColor = isVisible ? "" : "rgba(255, 255, 255, 0.35)";
+    });
+  }
+}
+
+function initViewSwitcher() {
+  const mainLayout = document.getElementById("mainLayout");
+  const patientPanel = document.getElementById("patientPanel");
+  const btnSplit = document.getElementById("btnViewSplit");
+  const btnGrid = document.getElementById("btnViewGrid");
+  const btnPatient = document.getElementById("btnViewPatient");
+
+  if (!mainLayout || !btnSplit || !btnGrid || !btnPatient) return;
+
+  const setViewMode = (mode) => {
+    mainLayout.classList.remove("view-mode-split", "view-mode-grid", "view-mode-patient");
+    [btnSplit, btnGrid, btnPatient].forEach(btn => {
+      btn.classList.remove("active");
+      btn.setAttribute("aria-selected", "false");
+    });
+
+    if (mode === 'grid') {
+      mainLayout.classList.add("view-mode-grid");
+      btnGrid.classList.add("active");
+      btnGrid.setAttribute("aria-selected", "true");
+      if (patientPanel) patientPanel.style.flex = "";
+    } else if (mode === 'patient') {
+      mainLayout.classList.add("view-mode-patient");
+      btnPatient.classList.add("active");
+      btnPatient.setAttribute("aria-selected", "true");
+      if (patientPanel) patientPanel.style.flex = "";
+    } else {
+      mainLayout.classList.add("view-mode-split");
+      btnSplit.classList.add("active");
+      btnSplit.setAttribute("aria-selected", "true");
+      
+      // Restore saved width percentage or default to 25%
+      const savedWidth = localStorage.getItem("patient_panel_width_percent") || "25";
+      if (patientPanel) patientPanel.style.flex = `0 0 ${savedWidth}%`;
+
+      const consolePanel = document.getElementById("consolePanel");
+      if (consolePanel && !consolePanel.classList.contains("collapsed")) {
+        const savedConsoleWidth = localStorage.getItem("console_panel_width_percent") || "25";
+        consolePanel.style.flex = `0 0 ${savedConsoleWidth}%`;
+      }
+    }
+
+    localStorage.setItem("ema_view_mode", mode);
+  };
+
+  btnSplit.addEventListener("click", () => setViewMode('split'));
+  btnGrid.addEventListener("click", () => setViewMode('grid'));
+  btnPatient.addEventListener("click", () => setViewMode('patient'));
+
+  const savedMode = localStorage.getItem("ema_view_mode") || "split";
+  setViewMode(savedMode);
+}
+
+function initPanelResizer() {
+  const mainLayout = document.getElementById("mainLayout");
+  const patientPanel = document.getElementById("patientPanel");
+  const panelResizer = document.getElementById("panelResizer");
+
+  if (!mainLayout || !patientPanel || !panelResizer) return;
+
+  let isDragging = false;
+
+  const onMouseDown = (e) => {
+    if (!mainLayout.classList.contains("view-mode-split")) return;
+    
+    isDragging = true;
+    panelResizer.classList.add("is-dragging");
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+  };
+
+  const onMouseMove = (e) => {
+    if (!isDragging) return;
+
+    const containerRect = mainLayout.getBoundingClientRect();
+    const clickX = e.clientX - containerRect.left;
+    let widthPercent = (clickX / containerRect.width) * 100;
+
+    // Enforce min and max limits (20% to 75%)
+    widthPercent = Math.max(20, Math.min(widthPercent, 75));
+
+    patientPanel.style.flex = `0 0 ${widthPercent}%`;
+    localStorage.setItem("patient_panel_width_percent", widthPercent.toFixed(1));
+  };
+
+  const onMouseUp = () => {
+    if (isDragging) {
+      isDragging = false;
+      panelResizer.classList.remove("is-dragging");
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+    }
+  };
+
+  panelResizer.addEventListener("mousedown", onMouseDown);
+  window.addEventListener("mousemove", onMouseMove);
+  window.addEventListener("mouseup", onMouseUp);
+
+  // Touch support for mobile/tablets
+  panelResizer.addEventListener("touchstart", (e) => {
+    if (e.touches.length === 1) onMouseDown(e.touches[0]);
+  });
+  window.addEventListener("touchmove", (e) => {
+    if (isDragging && e.touches.length === 1) onMouseMove(e.touches[0]);
+  });
+  window.addEventListener("touchend", onMouseUp);
+
+  const consolePanel = document.getElementById("consolePanel");
+  const consoleResizer = document.getElementById("consoleResizer");
+
+  // Vertical resizer for console
+  if (consolePanel && consoleResizer) {
+    let isConsoleDragging = false;
+    const onConsoleMouseDown = (e) => {
+      if (!mainLayout.classList.contains("view-mode-split")) return;
+      isConsoleDragging = true;
+      consoleResizer.classList.add("is-dragging");
+      document.body.style.cursor = "col-resize";
+      document.body.style.userSelect = "none";
+    };
+    const onConsoleMouseMove = (e) => {
+      if (!isConsoleDragging) return;
+      const containerRect = mainLayout.getBoundingClientRect();
+      const clickX = e.clientX - containerRect.left;
+      let widthPercent = (1 - (clickX / containerRect.width)) * 100;
+      widthPercent = Math.max(15, Math.min(widthPercent, 50));
+      consolePanel.style.flex = `0 0 ${widthPercent}%`;
+      localStorage.setItem("console_panel_width_percent", widthPercent.toFixed(1));
+    };
+    const onConsoleMouseUp = () => {
+      if (isConsoleDragging) {
+        isConsoleDragging = false;
+        consoleResizer.classList.remove("is-dragging");
+        document.body.style.cursor = "";
+        document.body.style.userSelect = "";
+      }
+    };
+    consoleResizer.addEventListener("mousedown", onConsoleMouseDown);
+    window.addEventListener("mousemove", onConsoleMouseMove);
+    window.addEventListener("mouseup", onConsoleMouseUp);
+
+    // Toggle Console Panel Collapse/Expand
+    const toggleConsoleCollapseBtn = document.getElementById("toggleConsoleCollapseBtn");
+    const toggleConsoleCollapseIcon = document.getElementById("toggleConsoleCollapseIcon");
+    if (toggleConsoleCollapseBtn) {
+      toggleConsoleCollapseBtn.addEventListener("click", () => {
+        const isCollapsed = consolePanel.classList.toggle("collapsed");
+        if (toggleConsoleCollapseIcon) {
+          toggleConsoleCollapseIcon.textContent = isCollapsed ? "chevron_left" : "chevron_right";
+        }
+        toggleConsoleCollapseBtn.title = isCollapsed ? "Expand Console" : "Collapse Console";
+
+        if (!isCollapsed) {
+          const savedConsoleWidth = localStorage.getItem("console_panel_width_percent") || "25";
+          consolePanel.style.flex = `0 0 ${savedConsoleWidth}%`;
+        } else {
+          consolePanel.style.flex = "0 0 44px";
+        }
+      });
+    }
+  }
+
+  // Horizontal split resizer for console sections
+  const consoleResizerHorizontal = document.getElementById("consoleResizerHorizontal");
+  const gridConsoleSection = document.getElementById("gridConsoleSection");
+  if (consolePanel && consoleResizerHorizontal && gridConsoleSection) {
+    let isSplitDragging = false;
+    const onSplitMouseDown = (e) => {
+      isSplitDragging = true;
+      document.body.style.cursor = "row-resize";
+      document.body.style.userSelect = "none";
+    };
+    const onSplitMouseMove = (e) => {
+      if (!isSplitDragging) return;
+      const containerRect = consolePanel.getBoundingClientRect();
+      const clickY = e.clientY - containerRect.top - 45; // adjust for header height approx
+      let heightPercent = (clickY / (containerRect.height - 45)) * 100;
+      heightPercent = Math.max(20, Math.min(heightPercent, 80));
+      gridConsoleSection.style.flex = `0 0 ${heightPercent}%`;
+    };
+    const onSplitMouseUp = () => {
+      if (isSplitDragging) {
+        isSplitDragging = false;
+        document.body.style.cursor = "";
+        document.body.style.userSelect = "";
+      }
+    };
+    consoleResizerHorizontal.addEventListener("mousedown", onSplitMouseDown);
+    window.addEventListener("mousemove", onSplitMouseMove);
+    window.addEventListener("mouseup", onSplitMouseUp);
+  }
+
+  // Horizontal split resizer for grid dashboard/chat
+  const gridResizerHorizontal = document.getElementById("gridResizerHorizontal");
+  const gridDashboard = document.querySelector(".grid-dashboard");
+  const gridPanel = document.getElementById("gridPanel");
+  if (gridPanel && gridResizerHorizontal && gridDashboard) {
+    let isGridDragging = false;
+    
+    // Restore default height percentage
+    const savedDashboardHeight = localStorage.getItem("grid_dashboard_height_percent") || "35";
+    gridDashboard.style.flex = `0 0 ${savedDashboardHeight}%`;
+
+    const onGridMouseDown = (e) => {
+      isGridDragging = true;
+      gridResizerHorizontal.classList.add("is-dragging");
+      document.body.style.cursor = "row-resize";
+      document.body.style.userSelect = "none";
+    };
+    const onGridMouseMove = (e) => {
+      if (!isGridDragging) return;
+      const containerRect = gridPanel.getBoundingClientRect();
+      const clickY = e.clientY - containerRect.top - 55; // Adjust for header height approx
+      let heightPercent = (clickY / (containerRect.height - 55)) * 100;
+      heightPercent = Math.max(15, Math.min(heightPercent, 70));
+      gridDashboard.style.flex = `0 0 ${heightPercent}%`;
+      localStorage.setItem("grid_dashboard_height_percent", heightPercent.toFixed(1));
+    };
+    const onGridMouseUp = () => {
+      if (isGridDragging) {
+        isGridDragging = false;
+        gridResizerHorizontal.classList.remove("is-dragging");
+        document.body.style.cursor = "";
+        document.body.style.userSelect = "";
+      }
+    };
+    gridResizerHorizontal.addEventListener("mousedown", onGridMouseDown);
+    window.addEventListener("mousemove", onGridMouseMove);
+    window.addEventListener("mouseup", onGridMouseUp);
+  }
+}
+
+function initJudgeDemoPresets() {
+  const demoDengueBtn = document.getElementById("demoDengueBtn");
+  const demoStaffingBtn = document.getElementById("demoStaffingBtn");
+
+  if (demoDengueBtn) {
+    demoDengueBtn.addEventListener("click", () => {
+      const btnSplit = document.getElementById("btnViewSplit");
+      if (btnSplit) btnSplit.click();
+
+      const messageInput = document.getElementById("message");
+      const sendButton = document.getElementById("sendButton");
+
+      if (messageInput) {
+        messageInput.value = "Hi EMA, I just got back from my clinic consultation in our usual Bentong Clinic in North District just now. Dr Amirah wrote 'Bilateral Basilar Pulmonary Crepitations and Acute Exacerbation of Bronchitis' on my note. Can you explain what this medical jargon means in simple terms?";
+        if (sendButton) sendButton.disabled = false;
+
+        const messageForm = document.getElementById("messageForm");
+        if (messageForm) {
+          messageForm.requestSubmit();
+        }
+      }
+    });
+  }
+
+  if (demoStaffingBtn) {
+    demoStaffingBtn.addEventListener("click", () => {
+      const btnSplit = document.getElementById("btnViewSplit");
+      if (btnSplit) btnSplit.click();
+
+      const gridInput = document.getElementById("gridMessage");
+      const gridForm = document.getElementById("gridMessageForm");
+
+      if (gridInput && gridForm) {
+        gridInput.value = "Query BigQuery telemetry for North District: Analyze the recent respiratory outbreak, check medical supply inventory, and generate an optimal inter-region supply reallocation plan for Oxygen Cylinders using the logistics tool.";
+        gridForm.requestSubmit();
+      }
+    });
+  }
+}
+
+function initDemoWalkthroughWidget() {
+  const widget = document.getElementById("demoWalkthroughWidget");
+  const toggleBtn = document.getElementById("toggleDemoWidgetBtn");
+  const toggleIcon = document.getElementById("toggleDemoWidgetIcon");
+
+  if (widget && toggleBtn) {
+    const toggleWidget = (e) => {
+      if (e) e.stopPropagation();
+      const isCollapsed = widget.classList.toggle("collapsed");
+      if (toggleIcon) {
+        toggleIcon.textContent = isCollapsed ? "keyboard_arrow_up" : "keyboard_arrow_down";
+      }
+      toggleBtn.title = isCollapsed ? "Expand Demo Walkthrough" : "Collapse Demo Walkthrough";
+    };
+
+    toggleBtn.addEventListener("click", toggleWidget);
+
+    const header = widget.querySelector(".demo-banner-header");
+    if (header) {
+      header.addEventListener("click", toggleWidget);
+    }
+  }
+}
+
+// Auto initialize UI Controllers on DOM ready
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", () => {
+    initViewSwitcher();
+    initPanelResizer();
+    initJudgeDemoPresets();
+    initProjectInfoDrawer();
+    initDemoWalkthroughWidget();
+  });
+} else {
+  initViewSwitcher();
+  initPanelResizer();
+  initJudgeDemoPresets();
+  initProjectInfoDrawer();
+  initDemoWalkthroughWidget();
+}
+
+
+

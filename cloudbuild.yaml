@@ -22,7 +22,7 @@ steps:
       - 'managed'
       - '--allow-unauthenticated'
       - '--set-env-vars'
-      - 'PROJECT_ID=$PROJECT_ID,LOCATION=$_LOCATION,CALENDAR_ID=$_CALENDAR_ID,DOCUMENT_ID=$_DOCUMENT_ID'
+      - 'PROJECT_ID=$PROJECT_ID,LOCATION=$_LOCATION,CALENDAR_ID=$_CALENDAR_ID,DOCUMENT_ID=$_DOCUMENT_ID,BIGQUERY_DATASET=$_BIGQUERY_DATASET'
 
 images:
   - 'gcr.io/$PROJECT_ID/$_SERVICE_NAME'
@@ -32,3 +32,4 @@ substitutions:
   _LOCATION: 'asia-southeast1'
   _CALENDAR_ID: 'primary'
   _DOCUMENT_ID: '' # User should provide this via --substitutions
+  _BIGQUERY_DATASET: 'ema_grid'

@@ -327,11 +327,8 @@ EMA/
 │       └── pcm-recorder-processor.js
 ├── documentation/             # Project docs, dev plans
 ├── requirements.txt           # Python dependencies (updated with google-cloud-bigquery)
-├── Dockerfile
-├── cloudbuild.yaml
-├── .env                       # Environment variables (including BigQuery dataset settings)
-└── .dockerignore
-```    # Cloud Build CI/CD pipeline
+├── Dockerfile                  # Container build instructions
+├── cloudbuild.yaml            # Cloud Build CI/CD pipeline
 ├── .env                       # Environment variables (local dev)
 └── .dockerignore              # Docker build exclusions
 ```

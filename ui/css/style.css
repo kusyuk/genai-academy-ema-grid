@@ -28,10 +28,7 @@
 
 body {
   font-family: var(--body-font);
-  background-color: var(--bg-color);
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
-  background-repeat: repeat;
-  background-attachment: fixed;
+  background-color: #f8fafc;
   color: #202124;
   line-height: 1.7;
   /* Increased to 18px for elderly accessibility */
@@ -39,66 +36,147 @@ body {
   height: 100vh;
   display: flex;
   flex-direction: column;
+  margin: 0;
+  padding: 0;
 }
 
-/* Header */
-header {
-  background: linear-gradient(135deg, rgba(102, 126, 234, 0.9) 0%, rgba(118, 75, 162, 0.9) 100%);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  color: white;
-  padding: 1.25rem 2rem;
-  box-shadow: var(--shadow-lg);
+/* Modern 56px Executive App Navbar */
+.app-header {
+  height: 56px;
+  min-height: 56px;
+  padding: 0 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.95) 0%, rgba(118, 75, 162, 0.95) 100%);
+  color: #ffffff;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
   position: sticky;
   top: 0;
   z-index: 100;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  transition: all 0.3s ease;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
 }
 
-h1 {
-  font-family: var(--heading-font);
-  font-size: 1.75rem;
-  font-weight: 700;
-  margin: 0;
-  letter-spacing: -0.02em;
-}
-
-.subtitle {
-  font-size: 0.875rem;
-  opacity: 0.9;
-  margin-top: 0.25rem;
-}
-
-/* Header Options (Proactivity, Affective Dialog checkboxes) */
-.header-options {
+.header-left {
   display: flex;
   align-items: center;
-  gap: 1.25rem;
-  margin-top: 0.75rem;
+  gap: 1rem;
 }
 
-/* TTS Toggle Button */
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.brand-icon {
+  font-size: 24px;
+  color: #38bdf8;
+}
+
+.brand-title h1 {
+  font-family: var(--heading-font);
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #ffffff;
+  margin: 0;
+  letter-spacing: -0.02em;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.brand-sub {
+  color: #38bdf8;
+  font-size: 0.85em;
+  font-weight: 700;
+  text-transform: uppercase;
+  background: rgba(56, 189, 248, 0.15);
+  padding: 0.1rem 0.4rem;
+  border-radius: 6px;
+  letter-spacing: 0.05em;
+}
+
+.header-center {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+/* Collapsible Info Drawer */
+.project-info-drawer {
+  background: #1e1b4b;
+  color: #cbd5e1;
+  padding: 0.75rem 1.25rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.info-drawer-content p {
+  margin: 0 0 0.25rem 0;
+}
+
+.info-drawer-content p:last-child {
+  margin-bottom: 0;
+}
+
+.info-toggle-btn {
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: #ffffff;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.info-toggle-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.connection-status {
+  position: relative;
+  top: auto;
+  right: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.78125rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+/* Header Options / TTS Toggle */
 .tts-toggle {
   display: flex;
   align-items: center;
-  gap: 0.375rem;
-  padding: 0.375rem 0.75rem;
+  gap: 0.35rem;
+  padding: 0.3rem 0.7rem;
   border-radius: 2rem;
   background-color: rgba(255, 255, 255, 0.15);
-  color: rgba(255, 255, 255, 0.7);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.25);
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
   font-family: var(--body-font);
-  font-size: 0.8125rem;
-  font-weight: 500;
-  width: auto;
-  height: auto;
+  font-size: 0.78125rem;
+  font-weight: 600;
 }
 
 .tts-toggle:hover {
-  background-color: rgba(255, 255, 255, 0.25);
+  background-color: rgba(255, 255, 255, 0.3);
 }
 
 .tts-toggle.active {
@@ -147,13 +225,12 @@ h1 {
 }
 
 .connection-status {
-  position: absolute;
-  top: 1.5rem;
-  right: 2rem;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  font-size: 0.875rem;
+  gap: 0.4rem;
+  font-size: 0.78125rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.9);
 }
 
 .status-indicator {
@@ -183,9 +260,9 @@ h1 {
 .main-layout {
   flex: 1;
   display: flex;
-  max-width: 1800px;
+  max-width: 100%;
   width: 100%;
-  margin: 0 auto;
+  margin: 0;
   overflow: hidden;
   gap: 0;
 }
@@ -255,12 +332,48 @@ h1 {
 }
 
 .bubble {
-  max-width: 70%;
+  max-width: 88%;
   padding: 0.75rem 1rem;
   border-radius: 1.25rem;
   word-wrap: break-word;
+  word-break: break-word;
+  overflow-x: auto;
   box-shadow: var(--shadow);
   position: relative;
+}
+
+/* Markdown Table & Code Block Styling inside Chat Bubbles */
+.bubble table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0.75rem 0;
+  font-size: 0.85rem;
+  display: block;
+  overflow-x: auto;
+  white-space: nowrap;
+}
+
+.bubble th, .bubble td {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #dadce0;
+  text-align: left;
+}
+
+.bubble th {
+  background-color: #f1f3f4;
+  font-weight: 600;
+  color: #202124;
+}
+
+.bubble tr:nth-child(even) {
+  background-color: #f8f9fa;
+}
+
+.bubble pre, .bubble code {
+  max-width: 100%;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 .message.user .bubble {
@@ -365,7 +478,7 @@ h1 {
   box-shadow: 0 -1px 0 var(--border-color);
 }
 
-.input-wrapper {
+.chat-input-wrapper {
   flex: 1;
   display: flex;
   align-items: center;
@@ -377,7 +490,7 @@ h1 {
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-.input-wrapper:focus-within {
+.chat-input-wrapper:focus-within {
   border-color: var(--primary-color);
   box-shadow: 0 0 0 3px rgba(66, 133, 244, 0.1);
   background-color: white;
@@ -585,22 +698,123 @@ button:active {
 
 /* Console Panel */
 .console-panel {
-  height: 220px;
-  flex: none;
+  flex: 1;
   display: flex;
   flex-direction: column;
   background-color: #1e1e1e;
   color: #d4d4d4;
   font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', 'source-code-pro', monospace;
   overflow: hidden;
-  max-width: 1800px;
-  width: 100%;
-  margin: 0 auto;
-  border-top: 1px solid var(--border-color);
+  height: 100%;
   border-left: 1px solid var(--border-color);
-  border-right: 1px solid var(--border-color);
-  border-radius: 8px 8px 0 0;
-  transition: height 0.3s ease;
+}
+
+.console-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--heading-font);
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #cccccc;
+}
+
+.console-toggle-btn {
+  background: transparent;
+  border: none;
+  color: #888888;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  width: 28px;
+  height: 28px;
+}
+
+.console-toggle-btn:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.console-toggle-btn:focus {
+  outline: none;
+}
+
+.console-title .material-symbols-rounded {
+  font-size: 18px;
+  color: #888888;
+}
+
+/* Collapsed Console Panel State */
+.console-panel.collapsed {
+  flex: 0 0 44px !important;
+  min-width: 44px !important;
+  max-width: 44px !important;
+  overflow: hidden;
+  transition: flex 0.2s ease, min-width 0.2s ease;
+}
+
+.console-panel.collapsed .console-header {
+  padding: 0.75rem 0.25rem;
+  justify-content: center;
+}
+
+.console-panel.collapsed .console-controls,
+.console-panel.collapsed .console-split-layout,
+.console-panel.collapsed .console-header-title,
+.console-panel.collapsed .icon-terminal {
+  display: none !important;
+}
+
+.console-split-layout {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.console-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.console-section-header {
+  padding: 0.375rem 0.75rem;
+  background-color: rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid #3e3e3e;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #888888;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.console-resizer-horizontal {
+  height: 6px;
+  background-color: #2d2d2d;
+  cursor: row-resize;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-top: 1px solid #1a1a1a;
+  border-bottom: 1px solid #3e3e3e;
+  flex: none;
+}
+
+.resizer-line-horizontal {
+  height: 2px;
+  width: 30px;
+  background-color: #555555;
+  border-radius: 2px;
+}
+
+.console-resizer-horizontal:hover .resizer-line-horizontal {
+  background-color: #888888;
 }
 
 .console-header {
@@ -895,35 +1109,56 @@ button:active {
 }
 
 /* Responsive Design */
-@media (max-width: 768px) {
-  header {
-    padding: 1rem 1.5rem;
+@media (max-width: 900px) {
+  .app-header {
+    height: auto;
+    min-height: 56px;
+    padding: 0.5rem 1rem;
+    flex-wrap: wrap;
+    gap: 0.5rem;
   }
 
-  h1 {
-    font-size: 1.25rem;
+  .cohort-roadmap-pill {
+    display: none;
   }
 
   .connection-status {
     position: static;
-    margin-top: 0.5rem;
+    margin-top: 0;
   }
 
-  /* Stack console panel below chat on mobile */
+
+  /* Stack panels on mobile */
   .main-layout {
-    flex-direction: column;
+    flex-direction: column !important;
+    height: auto;
+  }
+
+  .patient-panel, .grid-panel, .console-panel {
+    flex: none !important;
+    width: 100% !important;
+    height: 50vh !important;
   }
 
   .console-panel {
-    max-height: 300px;
+    max-height: none;
     border-top: 1px solid var(--border-color);
+    border-left: none;
+  }
+  
+  .console-split-layout {
+    flex-direction: column;
+  }
+
+  .panel-resizer, .console-resizer, .console-resizer-horizontal {
+    display: none;
   }
 
   .container {
     border-right: none;
   }
 
-  #messages {
+  #messages, #gridMessages {
     padding: 1rem;
   }
 
@@ -931,16 +1166,16 @@ button:active {
     max-width: 85%;
   }
 
-  .input-container {
+  .input-container, .grid-input-container {
     padding: 1rem;
   }
 
-  #messageForm {
+  #messageForm, #gridMessageForm {
     flex-direction: column;
     gap: 0.75rem;
   }
 
-  .input-wrapper {
+  .chat-input-wrapper {
     width: 100%;
     flex-direction: row;
   }
@@ -1407,10 +1642,17 @@ button:active {
 .panel-header {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 0.5rem;
   padding: 0.75rem 1.25rem;
   background-color: #f1f3f4;
   border-bottom: 1px solid var(--border-color);
+}
+
+.panel-header-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .panel-header h2 {
@@ -1430,6 +1672,7 @@ button:active {
 
 /* Grid Dashboard */
 .grid-dashboard {
+  flex: 0 0 35%;
   padding: 1.25rem;
   background-color: #ffffff;
   border-bottom: 1px solid var(--border-color);
@@ -1586,118 +1829,57 @@ button:active {
 }
 
 .grid-input-container {
-  padding: 0.75rem 1.25rem;
+  padding: 1rem 1.5rem;
   border-top: 1px solid var(--border-color);
   background: white;
+  box-shadow: 0 -1px 0 var(--border-color);
 }
 
 #gridMessageForm {
   display: flex;
-  gap: 0.75rem;
+  align-items: flex-end;
+  gap: 0;
 }
 
 #gridMessage {
   flex: 1;
-  padding: 0.625rem 1rem;
-  border: 1px solid var(--border-color);
-  border-radius: 2rem;
+  padding: 0.5rem 0;
+  border: none;
+  border-radius: 0;
+  font-size: 1rem;
+  font-family: inherit;
+  background: transparent;
   outline: none;
-  font-family: var(--body-font);
-  font-size: 0.95rem;
-  background: #f1f3f4;
-  transition: all 0.2s ease;
-}
-
-#gridMessage:focus {
-  background: white;
-  border-color: #1a73e8;
-  box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.2);
+  min-width: 0;
 }
 
 #gridSendButton {
-  background-color: #1a73e8;
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  background-color: var(--primary-color);
   color: white;
-  border: none;
   border-radius: 50%;
-  width: 40px;
-  height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: background-color 0.2s ease;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
-#gridSendButton:hover {
-  background-color: #1557b0;
+#gridSendButton:hover:not(:disabled) {
+  background-color: #2b6de8;
+}
+
+#gridSendButton:disabled {
+  background-color: #dadce0;
+  color: #9aa0a6;
+  cursor: not-allowed;
 }
 
 #gridSendButton .material-symbols-rounded {
-  font-size: 20px;
+  font-size: 22px;
+  font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  pointer-events: none;
 }
 
-/* Console Tabs */
-.console-tabs {
-  display: flex;
-  gap: 0.5rem;
-}
 
-.console-tab-btn {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: #888888;
-  padding: 0.375rem 0.875rem;
-  border-radius: 4px;
-  font-family: var(--body-font);
-  font-size: 0.8125rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.console-tab-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: #cccccc;
-}
-
-.console-tab-btn.active {
-  background: rgba(118, 75, 162, 0.25);
-  color: #ffffff;
-  border-color: rgba(118, 75, 162, 0.8);
-}
-
-/* Collapsible Console Controls */
-.console-toggle-btn {
-  background: transparent;
-  border: none;
-  color: #888888;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 4px;
-  border-radius: 4px;
-  transition: all 0.2s ease;
-  width: 28px;
-  height: 28px;
-}
-
-.console-toggle-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: #ffffff;
-}
-
-.console-toggle-btn .material-symbols-rounded {
-  font-size: 20px;
-}
-
-.console-panel.collapsed {
-  height: 42px !important;
-}
-
-.console-panel.collapsed .console-content {
-  display: none;
-}
 
 /* Minimized Purple Header Styles */
 header.minimized {
@@ -1840,4 +2022,488 @@ header.minimized .connection-status {
   background-color: #764ba2;
   width: 20px;
   border-radius: 4px;
+}
+
+/* ==========================================================================
+   HACKATHON HERO UI ENHANCEMENTS (Asymmetric Hero Split & Hybrid Switcher)
+   ========================================================================== */
+
+/* Header Row & Roadmap Pill */
+.header-top-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.cohort-roadmap-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 20px;
+  padding: 0.25rem 0.85rem;
+  font-size: 0.75rem;
+  backdrop-filter: blur(8px);
+}
+
+.roadmap-step.done {
+  opacity: 0.8;
+}
+
+.roadmap-step.active {
+  color: #ffffff;
+  font-weight: 700;
+  background: rgba(255, 255, 255, 0.25);
+  padding: 0.15rem 0.5rem;
+  border-radius: 10px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+}
+
+.roadmap-step.future {
+  opacity: 0.6;
+  font-style: italic;
+}
+
+.roadmap-arrow {
+  opacity: 0.5;
+  font-size: 0.7rem;
+}
+
+/* Header Controls Row */
+.header-controls-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+/* View Mode Switcher Toolbar */
+.view-mode-switcher {
+  display: flex;
+  background: rgba(0, 0, 0, 0.2);
+  padding: 3px;
+  border-radius: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.view-mode-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.85rem;
+  border-radius: 20px;
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.8);
+  font-family: var(--body-font);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.view-mode-btn:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.view-mode-btn.active {
+  background: #ffffff;
+  color: #1a73e8;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.view-mode-btn .material-symbols-rounded {
+  font-size: 16px;
+}
+
+/* Judge Demo Bar */
+.judge-demo-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.demo-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+.demo-preset-btn {
+  background: rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  color: #ffffff;
+  border-radius: 16px;
+  padding: 0.3rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  backdrop-filter: blur(4px);
+}
+
+.demo-preset-btn:hover {
+  background: rgba(255, 255, 255, 0.32);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+}
+
+.demo-preset-btn:active {
+  transform: translateY(0);
+}
+
+/* Cohort Header Badges */
+.cohort-badge {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  padding: 0.25rem 0.65rem;
+  border-radius: 12px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.cohort-badge.cohort-1 {
+  background-color: #e8f0fe;
+  color: #1a73e8;
+  border: 1px solid #aecbfa;
+}
+
+.cohort-badge.cohort-2 {
+  background: linear-gradient(135deg, #1a73e8 0%, #764ba2 100%);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 2px 6px rgba(118, 75, 162, 0.3);
+}
+
+/* Layout Proportion & Modes */
+/* 1. Asymmetric Hero Split View (Default): 25% Patient / 50% Grid Hero / 25% Console */
+.main-layout.view-mode-split .patient-panel {
+  flex: 0 0 25%;
+  min-width: 260px;
+  max-width: 45%;
+}
+
+.main-layout.view-mode-split .grid-panel {
+  flex: 1 1 auto;
+  min-width: 320px;
+}
+
+.main-layout.view-mode-split .console-panel {
+  flex: 0 0 25%;
+  min-width: 240px;
+  max-width: 45%;
+}
+
+/* Draggable Resizer Divider Handle */
+.panel-resizer {
+  width: 10px;
+  background: transparent;
+  cursor: col-resize;
+  position: relative;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+  flex-shrink: 0;
+  transition: background 0.2s ease;
+  margin: 0 -1px;
+}
+
+.panel-resizer:hover,
+.panel-resizer.is-dragging {
+  background: rgba(102, 126, 234, 0.25);
+}
+
+.resizer-line {
+  width: 3px;
+  height: 36px;
+  background: #cbd5e1;
+  border-radius: 3px;
+  transition: all 0.2s ease;
+}
+
+.panel-resizer:hover .resizer-line,
+.panel-resizer.is-dragging .resizer-line {
+  background: #667eea;
+  height: 100%;
+  width: 4px;
+  box-shadow: 0 0 10px rgba(102, 126, 234, 0.7);
+}
+
+/* 2. Grid Hero Mode: Full width Grid */
+.main-layout.view-mode-grid .patient-panel,
+.main-layout.view-mode-grid .panel-resizer {
+  display: none !important;
+}
+
+.main-layout.view-mode-grid .grid-panel {
+  flex: 1 !important;
+  width: 100% !important;
+}
+
+/* 3. Patient Mode: Full width Patient */
+.main-layout.view-mode-patient .grid-panel,
+.main-layout.view-mode-patient .panel-resizer {
+  display: none !important;
+}
+
+.main-layout.view-mode-patient .patient-panel {
+  flex: 1 !important;
+  width: 100% !important;
+  border-right: none !important;
+}
+
+/* Panel Header Badges */
+.panel-header-badges {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.telemetry-live-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.65rem;
+  font-weight: 700;
+  background: rgba(16, 185, 129, 0.12);
+  color: #059669;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  padding: 0.2rem 0.55rem;
+  border-radius: 12px;
+  letter-spacing: 0.03em;
+  transition: all 0.3s ease;
+}
+
+.pulse-icon {
+  font-size: 14px;
+  animation: flashPulse 1.5s infinite;
+}
+
+@keyframes flashPulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.4;
+    transform: scale(1.25);
+  }
+}
+
+/* Telemetry Flash Glow for BigQuery Hotspot Widget */
+.telemetry-flash {
+  animation: hotspotGlow 1.2s ease-in-out 2 !important;
+  border-color: #34a853 !important;
+}
+
+@keyframes hotspotGlow {
+  0%, 100% {
+    box-shadow: 0 0 0 rgba(52, 168, 83, 0);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(52, 168, 83, 0.6);
+  }
+}
+
+/* Collapsible Demo Walkthrough Banner inside Console Panel (Dark Theme) */
+.demo-walkthrough-banner {
+  margin: 0;
+  background: #252526;
+  border-bottom: 1px solid #3c3c3c;
+  border-left: none;
+  border-right: none;
+  border-top: none;
+  border-radius: 0;
+  box-shadow: none;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  flex-shrink: 0;
+}
+
+.demo-walkthrough-banner.collapsed {
+  height: 38px;
+}
+
+.demo-banner-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 1rem;
+  background: #2d2d2d;
+  border-bottom: 1px solid #3c3c3c;
+  cursor: pointer;
+  user-select: none;
+}
+
+.demo-banner-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: #a0aec0;
+}
+
+.demo-banner-title .material-symbols-rounded {
+  font-size: 18px;
+  color: #667eea;
+}
+
+.demo-banner-toggle-btn {
+  background: transparent;
+  border: none;
+  color: #718096;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  padding: 2px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.demo-banner-toggle-btn:hover {
+  color: white;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.demo-banner-body {
+  padding: 1rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  background: #1e1e1e;
+}
+
+.demo-banner-intro {
+  font-size: 0.78rem;
+  color: #a0aec0;
+  margin-bottom: 0.25rem;
+}
+
+.demo-banner-steps {
+  display: flex;
+  align-items: stretch;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.demo-banner-step-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 0.5rem;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 0.75rem;
+}
+
+.demo-step-num {
+  font-weight: 700;
+  font-size: 0.72rem;
+  color: #667eea;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.1rem;
+}
+
+.demo-step-desc {
+  font-size: 0.75rem;
+  color: #cbd5e0;
+  line-height: 1.35;
+  margin-bottom: 0.25rem;
+}
+
+.demo-banner-step-divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #4a5568;
+}
+
+.demo-banner-step-divider .material-symbols-rounded {
+  font-size: 20px;
+}
+
+.demo-banner-steps .demo-preset-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.45rem 0.75rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 6px;
+  color: #e2e8f0;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: none;
+  transition: all 0.2s ease;
+  backdrop-filter: none;
+}
+
+.demo-banner-steps .demo-preset-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: white;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+}
+
+.demo-banner-steps .demo-preset-btn:active {
+  transform: translateY(0);
+}
+
+/* Horizontal Resizer inside Grid Panel */
+.grid-resizer-horizontal {
+  height: 8px;
+  background-color: #f1f3f4;
+  cursor: row-resize;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-top: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-color);
+  flex-shrink: 0;
+  user-select: none;
+}
+
+.grid-resizer-horizontal:hover,
+.grid-resizer-horizontal.is-dragging {
+  background-color: #e8f0fe;
+}
+
+.grid-resizer-horizontal .resizer-line-horizontal {
+  height: 2px;
+  width: 30px;
+  background-color: #a0aec0;
+  border-radius: 2px;
+  transition: all 0.2s ease;
+}
+
+.grid-resizer-horizontal:hover .resizer-line-horizontal,
+.grid-resizer-horizontal.is-dragging .resizer-line-horizontal {
+  background-color: #1a73e8;
+  width: 50px;
 }

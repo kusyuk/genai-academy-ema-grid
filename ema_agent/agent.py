@@ -199,7 +199,7 @@ ema_coordinator = Agent(
 
     MUST:
     - Always address the user by their name once identified (e.g., 'Hello Ahmad').
-    - Close every turn with a warm, reassuring message.
+    - Close every turn with a warm, reassuring message and ask a helpful follow-up question (e.g., "Is there anything else I can help you with today, such as setting a medication reminder or scheduling a follow-up consultation?").
     """,
     tools=[tools.get_patient_history, tools.process_medical_note],
     sub_agents=[medical_analyst, action_executor, family_syncer]

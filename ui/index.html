@@ -13,32 +13,73 @@
   <link
     href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
     rel="stylesheet">
-  <link rel="stylesheet" href="/static/css/style.css">
+  <link rel="stylesheet" href="/static/css/style.css?v=2">
   <!-- marked.js: lightweight Markdown renderer for agent chat bubbles -->
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-  <script src="/static/js/app.js" type="module"></script>
+  <script src="/static/js/app.js?v=2" type="module"></script>
 </head>
 
 <body>
-  <header class="minimized">
-    <h1>EMA: Elderly Medical Assistant</h1>
-    <div class="subtitle">Gen AI Academy APAC Edition: Protoype Submission - Muhammad Ku Sukry bin Muhammad Mustafa (kusyuk@gmail.com)
+  <header class="app-header">
+    <div class="header-left">
+      <div class="brand">
+        <span class="material-symbols-rounded brand-icon">medical_services</span>
+        <div class="brand-title">
+          <h1>EMA <span class="brand-sub">GRID</span></h1>
+        </div>
+      </div>
+      <div class="cohort-roadmap-pill" title="Project Progression Trajectory">
+        <span class="roadmap-step done">Cohort 1</span>
+        <span class="roadmap-arrow">➔</span>
+        <span class="roadmap-step active">Cohort 2: Decision Intelligence</span>
+        <span class="roadmap-arrow">➔</span>
+        <span class="roadmap-step future">Cohort 3</span>
+      </div>
     </div>
-    <div class="subtitle">While EMA (cohort 1) focus on assistant for elderly patients, EMA Grid will focus on providing decision intelligence for healthcare professionals. Helping the hospital, medical officers and public health workers to make informed decisions based on real-time data gained from EMA. </div>
-    <div class="header-options">
+
+    <div class="header-center">
+      <!-- View Mode Switcher -->
+      <div class="view-mode-switcher" role="tablist" aria-label="Layout View Modes">
+        <button class="view-mode-btn active" id="btnViewSplit" title="Balanced Split View (Live Sync)" role="tab" aria-selected="true">
+          <span class="material-symbols-rounded">splitscreen</span>
+          <span>⚡ Split View</span>
+        </button>
+        <button class="view-mode-btn" id="btnViewGrid" title="Focus on EMA Grid Decision Console" role="tab" aria-selected="false">
+          <span class="material-symbols-rounded">analytics</span>
+          <span>📊 EMA Grid Dashboard</span>
+        </button>
+        <button class="view-mode-btn" id="btnViewPatient" title="Focus on EMA Patient Assistant" role="tab" aria-selected="false">
+          <span class="material-symbols-rounded">person</span>
+          <span>👤 EMA Patient Node</span>
+        </button>
+      </div>
+
+    </div>
+
+    <div class="header-right">
       <button id="ttsToggle" class="tts-toggle active" title="Toggle voice output" aria-label="Toggle voice output">
         <span class="material-symbols-rounded">volume_up</span>
         <span class="tts-label">Voice On</span>
       </button>
-      <button id="toggleHeaderBtn" class="tts-toggle" title="Expand Header" aria-label="Expand Header">
-        <span class="material-symbols-rounded" id="toggleHeaderIcon">keyboard_arrow_down</span>
+      
+      <div class="connection-status">
+        <span class="status-indicator" id="statusIndicator"></span>
+        <span id="statusText">Connected</span>
+      </div>
+
+      <button id="toggleInfoBtn" class="info-toggle-btn" title="Toggle Project Details">
+        <span class="material-symbols-rounded">info</span>
       </button>
     </div>
-    <div class="connection-status">
-      <span class="status-indicator" id="statusIndicator"></span>
-      <span id="statusText">Connecting...</span>
-    </div>
   </header>
+
+  <!-- Collapsible Project Info Drawer -->
+  <div id="projectInfoDrawer" class="project-info-drawer" style="display: none;">
+    <div class="info-drawer-content">
+      <p><strong>Gen AI Academy APAC Edition: Prototype Submission</strong> — Muhammad Ku Sukry bin Muhammad Mustafa (kusyuk@gmail.com)</p>
+      <p>While EMA (Cohort 1) focuses on assistance for elderly patients, <strong>EMA Grid (Cohort 2)</strong> provides decision intelligence for healthcare professionals—helping hospitals and public health workers make real-time decisions from anonymized telemetry.</p>
+    </div>
+  </div>
 
   <!-- Notification Banner: driven by calendar_watchdog via /notifications API -->
   <div id="notificationBanner" class="notification-banner" style="display:none;">
@@ -55,12 +96,21 @@
     </button>
   </div>
 
-  <div class="main-layout">
-    <!-- LEFT PANEL: EMA Patient Assistant + Bottom Console -->
-    <div class="patient-panel">
-      <div class="panel-header">
-        <span class="material-symbols-rounded">person</span>
-        <h2>EMA Patient Assistant</h2>
+  <div class="main-layout view-mode-split" id="mainLayout">
+    <!-- LEFT PANEL: EMA Patient Assistant (Cohort 1 Baseline & Data Source) -->
+    <div class="patient-panel" id="patientPanel">
+      <div class="panel-header patient-header">
+        <div class="panel-header-title">
+          <span class="material-symbols-rounded">person</span>
+          <h2>EMA Patient Assistant</h2>
+        </div>
+        <div class="panel-header-badges">
+          <span class="cohort-badge cohort-1" title="Cohort 1 Baseline Prototype">COHORT 1</span>
+          <span class="telemetry-live-badge" id="telemetryBadge" title="Live Telemetry Link: Patient Reports Stream to BigQuery">
+            <span class="material-symbols-rounded pulse-icon">bolt</span>
+            <span>BQ STREAM ACTIVE</span>
+          </span>
+        </div>
       </div>
       
       <div class="container">
@@ -69,7 +119,7 @@
         <div class="input-container">
           <form id="messageForm">
             <div class="message-input-col">
-              <div class="input-wrapper">
+              <div class="chat-input-wrapper">
                 <input type="text" id="message" name="message" placeholder="Type your message here..."
                   autocomplete="off" />
                 <button type="button" id="uploadPhotoButton" title="Upload a photo from device">
@@ -99,11 +149,19 @@
 
     </div>
 
-    <!-- RIGHT PANEL: EMA Grid Decision Intelligence Platform -->
-    <div class="grid-panel">
-      <div class="panel-header">
-        <span class="material-symbols-rounded">analytics</span>
-        <h2>EMA Grid Decision Console</h2>
+    <!-- Draggable Resizer Handle -->
+    <div class="panel-resizer" id="panelResizer" title="Drag left/right to resize panels">
+      <div class="resizer-line"></div>
+    </div>
+
+    <!-- CENTER PANEL: EMA Grid Decision Intelligence Platform (Cohort 2) -->
+    <div class="grid-panel" id="gridPanel">
+      <div class="panel-header grid-header">
+        <div class="panel-header-title">
+          <span class="material-symbols-rounded">analytics</span>
+          <h2>EMA Grid Decision Console</h2>
+        </div>
+        <span class="cohort-badge cohort-2" title="Cohort 2 Primary Submission">COHORT 2</span>
       </div>
 
       <div class="grid-dashboard">
@@ -113,10 +171,23 @@
             <div id="hotspotList" class="widget-content">Loading BigQuery metrics...</div>
           </div>
           <div class="widget alerts-widget">
-            <h3>Staffing & Resource Alerts</h3>
+            <h3>Staffing & Surge Alerts</h3>
             <div id="alertList" class="widget-content">Loading staffing rules...</div>
           </div>
+          <div class="widget supplies-widget">
+            <h3>Medical Supply Stock & Shortages</h3>
+            <div id="suppliesList" class="widget-content">Loading supply inventories...</div>
+          </div>
+          <div class="widget hospitals-widget">
+            <h3>Hospital Bed & ICU Capacity</h3>
+            <div id="hospitalList" class="widget-content">Loading capacity metrics...</div>
+          </div>
         </div>
+      </div>
+
+      <!-- Horizontal Resizer for Grid Panel -->
+      <div class="grid-resizer-horizontal" id="gridResizerHorizontal" title="Drag up/down to resize dashboard/chat">
+        <div class="resizer-line-horizontal"></div>
       </div>
 
       <!-- Decision Agent Chat -->
@@ -126,37 +197,99 @@
           <h3>Decision Support Agent</h3>
         </div>
         <div id="gridMessages"></div>
-        <div class="grid-input-container">
+        <div class="input-container grid-input-container">
           <form id="gridMessageForm">
-            <input type="text" id="gridMessage" placeholder="Ask the Grid Agent about outbreaks or resource allocation..." autocomplete="off">
-            <button type="submit" id="gridSendButton" title="Send query">
+            <input type="text" id="gridMessage" name="message" placeholder="Ask the Grid Agent about outbreaks or resource allocation..." autocomplete="off">
+            <button type="submit" id="gridSendButton" title="Send query" disabled>
               <span class="material-symbols-rounded">send</span>
             </button>
           </form>
         </div>
       </div>
     </div>
-  </div>
+    <!-- Draggable Resizer Handle for Console -->
+    <div class="panel-resizer" id="consoleResizer" title="Drag left/right to resize console">
+      <div class="resizer-line"></div>
+    </div>
 
-  <!-- Docked Console Panel -->
-  <div class="console-panel collapsed">
-    <div class="console-header">
-      <div class="console-tabs">
-        <button class="console-tab-btn active" id="patientConsoleTab">Patient Console</button>
-        <button class="console-tab-btn" id="gridConsoleTab">Grid Console</button>
+    <!-- RIGHT PANEL: Split Console Panel -->
+    <div class="console-panel" id="consolePanel">
+      <!-- Collapsible Demo Walkthrough Banner -->
+      <div class="demo-walkthrough-banner collapsed" id="demoWalkthroughWidget">
+        <div class="demo-banner-header">
+          <div class="demo-banner-title">
+            <span class="material-symbols-rounded">explore</span>
+            <span>Demo Walkthrough Scenario</span>
+          </div>
+          <button id="toggleDemoWidgetBtn" class="demo-banner-toggle-btn" title="Expand Demo Walkthrough">
+            <span class="material-symbols-rounded" id="toggleDemoWidgetIcon">keyboard_arrow_up</span>
+          </button>
+        </div>
+        <div class="demo-banner-body">
+          <p class="demo-banner-intro">Run this 2-step scenario to see how patient logs flow to the grid decision system in real time:</p>
+          <div class="demo-banner-steps">
+            <div class="demo-banner-step-item">
+              <div class="demo-step-num">Step 1</div>
+              <p class="demo-step-desc">Simulate a patient upload to stream telemetry to BigQuery.</p>
+              <button type="button" class="demo-preset-btn" id="demoDengueBtn" title="Step 1: Patient asks EMA to explain clinic visit medical jargon in layman terms & stream anonymized telemetry">
+                <span class="material-symbols-rounded">medical_information</span>
+                <span>Jargon & Telemetry</span>
+              </button>
+            </div>
+
+            <div class="demo-banner-step-divider">
+              <span class="material-symbols-rounded">arrow_forward</span>
+            </div>
+
+            <div class="demo-banner-step-item">
+              <div class="demo-step-num">Step 2</div>
+              <p class="demo-step-desc">Query BigQuery telemetry & recommend supply transfers.</p>
+              <button type="button" class="demo-preset-btn" id="demoStaffingBtn" title="Step 2: Official queries BigQuery telemetry for North District & calculates inter-region supply reallocation">
+                <span class="material-symbols-rounded">local_shipping</span>
+                <span>Query & Supply Transfer</span>
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
-      <div class="console-controls">
-        <label class="console-checkbox">
-          <input type="checkbox" id="showAudioEvents">
-          <span>Show audio</span>
-        </label>
-        <button id="clearConsole" class="console-clear-btn">Clear</button>
-        <button id="toggleConsoleBtn" class="console-toggle-btn" title="Toggle Console">
-          <span class="material-symbols-rounded" id="toggleConsoleIcon">keyboard_arrow_up</span>
-        </button>
+
+      <div class="console-header">
+        <div class="console-title">
+          <button id="toggleConsoleCollapseBtn" class="console-toggle-btn" title="Collapse Console">
+            <span class="material-symbols-rounded" id="toggleConsoleCollapseIcon">chevron_right</span>
+          </button>
+          <span class="material-symbols-rounded icon-terminal">terminal</span>
+          <span class="console-header-title">System Logs</span>
+        </div>
+        <div class="console-controls">
+          <label class="console-checkbox">
+            <input type="checkbox" id="showAudioEvents">
+            <span>Show audio</span>
+          </label>
+          <button id="clearConsole" class="console-clear-btn">Clear</button>
+        </div>
+      </div>
+      <div class="console-split-layout">
+        <!-- Top: Grid Console -->
+        <div class="console-section" id="gridConsoleSection">
+          <div class="console-section-header">
+            <span>EMA Grid Logs</span>
+          </div>
+          <div id="gridConsoleContent" class="console-content"></div>
+        </div>
+        <!-- Resizer for Console Split -->
+        <div class="console-resizer-horizontal" id="consoleResizerHorizontal">
+          <div class="resizer-line-horizontal"></div>
+        </div>
+        <!-- Bottom: Patient Console -->
+        <div class="console-section" id="patientConsoleSection">
+          <div class="console-section-header">
+            <span>EMA Patient Logs</span>
+          </div>
+          <div id="patientConsoleContent" class="console-content"></div>
+        </div>
       </div>
     </div>
-    <div id="consoleContent" class="console-content"></div>
   </div>
 
   <!-- Camera Preview Modal -->
@@ -196,19 +329,25 @@
             medical officers and public health workers to make informed decisions based on real-time data gained from EMA. For this demo I include EMA and EMA Grid side by side to show the continuity and integration of the two.</p>
         </div>
         
-        <!-- Slide 2: Two-Side UI Split -->
+        <!-- Slide 2: 3-Panel Split Layout -->
         <div class="intro-slide" id="slide2">
-          <h4 class="slide-subtitle">FOR DEMO PURPOSED: Symmetrical 2-Side Interface</h4>
-          <div class="intro-split-desc">
+          <h4 class="slide-subtitle">Symmetrical 3-Panel Interface</h4>
+          <p>The screen is divided into 3 responsive panels. You can drag the vertical resizers to adjust their sizes, or collapse panels using the minimal toggle buttons:</p>
+          <div class="intro-split-desc" style="margin-top: 1rem; gap: 1rem;">
             <div class="desc-col">
               <span class="material-symbols-rounded">person</span>
-              <h4>Left Side: Patient Assistant</h4>
-              <p>Simulates the patient app. Report symptoms via text, voice, or camera capture, and manage care schedules.</p>
+              <h4>1. Patient Assistant</h4>
+              <p>Simulates the patient app. Report symptoms via text, voice, or camera, and manage schedules.</p>
             </div>
             <div class="desc-col">
               <span class="material-symbols-rounded">analytics</span>
-              <h4>Right Side: Grid Console</h4>
-              <p>Simulates the healthcare official console. Inspect live outbreak hotspots, staffing alerts, and query data with the BQ Decision Agent.</p>
+              <h4>2. Grid Console</h4>
+              <p>Simulates the hospital official console. Inspect live outbreak hotspots, staffing alerts, and query data with the BQ Agent.</p>
+            </div>
+            <div class="desc-col">
+              <span class="material-symbols-rounded">terminal</span>
+              <h4>3. System Logs</h4>
+              <p>Streams patient and grid agent logs side-by-side in real time. Can be collapsed to a slim vertical bar.</p>
             </div>
           </div>
         </div>
@@ -222,6 +361,18 @@
             <p style="color: #3c4043;">When you send a symptom report on the Patient side (e.g. <i>"I have high fever and respiratory problems"</i>), the agent registers it, writes it directly into BigQuery, and the Grid dashboard updates its case counts in real time!</p>
           </div>
         </div>
+
+        <!-- Slide 4: Demo Walkthrough -->
+        <div class="intro-slide" id="slide4">
+          <h4 class="slide-subtitle">Interactive Demo Storyboard</h4>
+          <p>We've added a **Demo Walkthrough** widget at the top-right of the console section to guide you through the two-step evaluation flow:</p>
+          <div style="margin-top: 1rem; text-align: left; padding: 0.5rem 1rem; background: rgba(102, 126, 234, 0.08); border-radius: 8px;">
+            <p style="margin-bottom: 0.5rem;"><strong>Step 1: Jargon & Telemetry</strong></p>
+            <p style="font-size: 0.85rem; color: #5f6368; margin-bottom: 1rem;">Simulate a patient upload to stream telemetry data directly into BigQuery.</p>
+            <p style="margin-bottom: 0.5rem;"><strong>Step 2: Query & Supply Transfer</strong></p>
+            <p style="font-size: 0.85rem; color: #5f6368;">Query the aggregated telemetry dataset and calculate inter-region medical supply reallocations directly from the Decision Support console.</p>
+          </div>
+        </div>
         
       </div>
       <div class="modal-footer" style="justify-content: space-between; align-items: center; padding: 1.25rem 2rem;">
@@ -229,6 +380,7 @@
           <span class="dot active" data-slide="0"></span>
           <span class="dot" data-slide="1"></span>
           <span class="dot" data-slide="2"></span>
+          <span class="dot" data-slide="3"></span>
         </div>
         <div style="display: flex; gap: 0.75rem;">
           <button id="prevSlideBtn" class="btn-secondary" style="display: none; padding: 0.5rem 1rem;">Back</button>

@@ -170,10 +170,13 @@ async def transcribe_audio(audio_bytes: bytes) -> str:
         logging.error(f"STT Error: {e}")
         return ""
 
+# --- ACTIVE WEBSOCKETS REGISTRY FOR TELEMETRY BROADCAST ---
+active_websockets = set()
+
 # --- Post-Session Summary Helper ---
 async def _save_session_summary(user_id: str, session_id: str):
-    """Summarizes the conversation session and updates the patient's Firestore record.
-    Uses Gemini to generate a precise clinical log with medical jargon.
+    """Summarizes the conversation session, updates the patient's Firestore record,
+    and streams structured telemetry into BigQuery `ema_grid.symptom_reports`.
     """
     try:
         session_obj = await agent_runner.session_service.get_session(
@@ -182,58 +185,131 @@ async def _save_session_summary(user_id: str, session_id: str):
         if not session_obj or not hasattr(session_obj, 'state'):
             return
             
-        patient_id = session_obj.state.get("PATIENT_ID")
-        if not patient_id:
-            logging.info(f"[{user_id}:{session_id}] No PATIENT_ID found. Skipping closed-loop memory update.")
-            return
+        patient_id = session_obj.state.get("PATIENT_ID") or user_id or "patient_123"
 
         # Extract user messages to understand what new info was discussed
         user_inputs = []
-        for turn in session_obj.turns:
-            if hasattr(turn, 'message') and turn.message and turn.message.parts:
-                for part in turn.message.parts:
-                    if part.text:
+        events = getattr(session_obj, 'events', []) or getattr(session_obj, 'history', []) or []
+        for event in events:
+            if getattr(event, 'author', None) == 'user':
+                content = getattr(event, 'content', None)
+                if content and hasattr(content, 'parts') and content.parts:
+                    for part in content.parts:
+                        if hasattr(part, 'text') and part.text and part.text != "__START_SESSION__":
+                            user_inputs.append(part.text)
+            elif hasattr(event, 'message') and event.message and hasattr(event.message, 'parts'):
+                for part in event.message.parts:
+                    if hasattr(part, 'text') and part.text and part.text != "__START_SESSION__":
                         user_inputs.append(part.text)
                         
         if not user_inputs:
             return
             
         transcript = "\n".join(f"- {msg}" for msg in user_inputs)
-        prompt = (
-            "You are a clinical summarizer. Review the following patient inputs from a session. "
-            "Write a very concise, precise clinical log entry using appropriate medical jargon. "
-            "Focus only on new symptoms, medical requests, or scheduled follow-ups. "
-            "If it was just a casual greeting with no medical info, reply with 'NO_MEDICAL_INFO'.\n\n"
-            f"Patient Inputs:\n{transcript}"
-        )
         
-        loop = asyncio.get_event_loop()
-        response = await loop.run_in_executor(
-            None,
-            lambda: genai_client.models.generate_content(
-                model="gemini-2.5-flash",
-                contents=[prompt]
+        # 1. Closed-loop Firestore Update
+        try:
+            prompt = (
+                "You are a clinical summarizer. Review the following patient inputs from a session. "
+                "Write a very concise, precise clinical log entry using appropriate medical jargon. "
+                "Focus only on new symptoms, medical requests, or scheduled follow-ups. "
+                "If it was just a casual greeting with no medical info, reply with 'NO_MEDICAL_INFO'.\n\n"
+                f"Patient Inputs:\n{transcript}"
             )
-        )
-        
-        summary = response.text.strip()
-        if summary == "NO_MEDICAL_INFO" or not summary:
-            logging.info(f"[{user_id}:{session_id}] No new medical info to log.")
-            return
             
-        # Append to Firestore
-        doc_ref = db_client.collection('patients').document(patient_id)
-        new_entry = {
-            "date": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), 
-            "notes": summary
-        }
-        await loop.run_in_executor(
-            None,
-            lambda: doc_ref.update({"history": firestore.ArrayUnion([new_entry])})
-        )
-        logging.info(f"[{user_id}:{session_id}] Closed-loop memory saved to Firestore.")
+            loop = asyncio.get_event_loop()
+            response = await loop.run_in_executor(
+                None,
+                lambda: genai_client.models.generate_content(
+                    model="gemini-2.5-flash",
+                    contents=[prompt]
+                )
+            )
+            
+            summary = response.text.strip()
+            if summary != "NO_MEDICAL_INFO" and summary:
+                doc_ref = db_client.collection('patients').document(patient_id)
+                new_entry = {
+                    "date": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), 
+                    "notes": summary
+                }
+                await loop.run_in_executor(
+                    None,
+                    lambda: doc_ref.update({"history": firestore.ArrayUnion([new_entry])})
+                )
+                logging.info(f"[{user_id}:{session_id}] Closed-loop memory saved to Firestore for patient '{patient_id}'.")
+        except Exception as fs_err:
+            logging.warning(f"[{user_id}:{session_id}] Firestore closed-loop memory update warning: {fs_err}")
+            summary = "Patient clinical update"
+
+        # 2. STREAM TELEMETRY TO BIGQUERY & BROADCAST TO WEBSOCKET CONSOLES
+        try:
+            _creds_path = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
+            if _creds_path and not os.path.exists(_creds_path):
+                os.environ.pop("GOOGLE_APPLICATION_CREDENTIALS", None)
+
+            telemetry_prompt = (
+                "Analyze this patient transcript and return JSON ONLY with exact keys:\n"
+                "- 'symptom_cluster': string, exactly one of ['Respiratory', 'Gastrointestinal', 'Cardiac', 'Neurological', 'Skin/Allergy']\n"
+                "- 'severity': string, exactly one of ['Low', 'Medium', 'High']\n"
+                "- 'region': string, district name (default to 'North District')\n"
+                "- 'notes_summary': concise symptom complaint\n\n"
+                f"Transcript:\n{transcript}"
+            )
+            telemetry_res = await loop.run_in_executor(
+                None,
+                lambda: genai_client.models.generate_content(
+                    model="gemini-2.5-flash",
+                    contents=[telemetry_prompt],
+                    config=types.GenerateContentConfig(response_mime_type="application/json")
+                )
+            )
+            telemetry_data = json.loads(telemetry_res.text)
+            
+            bq_record = {
+                "timestamp": datetime.datetime.now(datetime.UTC).isoformat(),
+                "region": telemetry_data.get("region", "North District"),
+                "symptom_cluster": telemetry_data.get("symptom_cluster", "Respiratory"),
+                "severity": telemetry_data.get("severity", "Medium"),
+                "patient_age": 74,
+                "is_emergency": telemetry_data.get("severity") == "High",
+                "notes_summary": telemetry_data.get("notes_summary", summary)
+            }
+            
+            logging.info(
+                f"⚡ [TELEMETRY BRIDGE] Extracted patient telemetry: "
+                f"{bq_record['region']} | {bq_record['symptom_cluster']} | {bq_record['severity']}"
+            )
+            
+            # 3. Broadcast to active WebSocket connections for Live Console Logging IMMEDIATELY
+            telemetry_event = {
+                "type": "telemetry_stream",
+                "data": bq_record
+            }
+            for ws in list(active_websockets):
+                try:
+                    await ws.send_text(json.dumps(telemetry_event))
+                except Exception as ws_err:
+                    logging.warning(f"Error broadcasting telemetry over WebSocket: {ws_err}")
+
+            # 4. Stream row into BigQuery dataset
+            try:
+                bq_dataset = os.getenv("BIGQUERY_DATASET", "ema_grid")
+                bq_table_ref = bigquery.Client(project=PROJECT_ID).dataset(bq_dataset).table("symptom_reports")
+                insert_errs = bigquery.Client(project=PROJECT_ID).insert_rows_json(bq_table_ref, [bq_record])
+                if insert_errs:
+                    logging.error(f"BigQuery Telemetry Stream insert warning: {insert_errs}")
+                else:
+                    logging.info(f"Successfully inserted telemetry row to BigQuery `{bq_dataset}.symptom_reports`.")
+            except Exception as bq_insert_err:
+                logging.error(f"BigQuery Telemetry insert exception: {bq_insert_err}")
+
+        except Exception as bq_err:
+            logging.error(f"Error extracting telemetry: {bq_err}", exc_info=True)
+
     except Exception as e:
         logging.error(f"[{user_id}:{session_id}] Error saving session summary: {e}", exc_info=True)
+
 
 
 # --- 5a. WATCHDOG & LIFESPAN (defined before app for constructor injection) ---
@@ -315,6 +391,7 @@ app.add_middleware(
 @app.websocket("/ws/{user_id}/{session_id}")
 async def websocket_endpoint(websocket: WebSocket, user_id: str, session_id: str):
     await websocket.accept()
+    active_websockets.add(websocket)
     logging.info(f"[{user_id}:{session_id}] WebSocket accepted (Turn-based flow).")
 
     # Ensure session exists in the runner's session service
@@ -330,48 +407,25 @@ async def websocket_endpoint(websocket: WebSocket, user_id: str, session_id: str
     def _strip_markdown_for_tts(text: str) -> str:
         """Remove markdown formatting and URLs so TTS reads natural prose."""
         import re
-        # Remove code fences (```...```)
         text = re.sub(r'```[\s\S]*?```', '', text)
-        # Remove inline code (`...`)
         text = re.sub(r'`([^`]*)`', r'\1', text)
-        # Convert markdown links [text](url) → text only (discard URL)
         text = re.sub(r'\[([^\]]+)\]\([^)]+\)', r'\1', text)
-        # Remove images ![alt](url)
         text = re.sub(r'!\[([^\]]*)\]\([^)]+\)', r'\1', text)
-        # Remove bare URLs (http/https) — e.g. Wikipedia references
-        # Replace with empty string so the sentence still flows naturally.
-        text = re.sub(
-            r'https?://[^\s<>\[\](){}"\']+', '', text
-        )
-        # Remove leftover parentheses that contained only a URL, e.g. "()"
+        text = re.sub(r'https?://[^\s<>\[\](){}"\']+', '', text)
         text = re.sub(r'\(\s*\)', '', text)
-        # Remove headers (# ... ######)
         text = re.sub(r'^#{1,6}\s+', '', text, flags=re.MULTILINE)
-        # Remove bold/italic markers (**, __, *, _)
         text = re.sub(r'\*{1,3}([^*]+)\*{1,3}', r'\1', text)
         text = re.sub(r'_{1,3}([^_]+)_{1,3}', r'\1', text)
-        # Remove strikethrough (~~text~~)
         text = re.sub(r'~~([^~]+)~~', r'\1', text)
-        # Remove blockquote markers
         text = re.sub(r'^>\s?', '', text, flags=re.MULTILINE)
-        # Remove horizontal rules (---, ***, ___)
         text = re.sub(r'^[-*_]{3,}\s*$', '', text, flags=re.MULTILINE)
-        # Convert bullet points (- or *) to a spoken pause marker
         text = re.sub(r'^\s*[-*+]\s+', '', text, flags=re.MULTILINE)
-        # Convert numbered lists (1. 2. etc.) to just the number
         text = re.sub(r'^\s*(\d+)\.\s+', r'\1. ', text, flags=re.MULTILINE)
-        # Collapse multiple blank lines
         text = re.sub(r'\n{3,}', '\n\n', text)
-        # Collapse extra spaces left by URL removal
         text = re.sub(r'  +', ' ', text)
         return text.strip()
 
     async def _send_tts_audio(text: str):
-        """Background task: synthesise TTS and push audio to the client.
-
-        Runs *after* the LLM turn is complete so that the text response
-        reaches the frontend immediately, and audio arrives ~2s later.
-        """
         if not tts_enabled:
             logging.info(f"[{user_id}:{session_id}] TTS is disabled by user. Skipping voice generation.")
             return
@@ -393,15 +447,11 @@ async def websocket_endpoint(websocket: WebSocket, user_id: str, session_id: str
                 }
                 await websocket.send_text(json.dumps(audio_event))
         except Exception as e:
-            logging.error(
-                f"[{user_id}:{session_id}] TTS background task error: {e}",
-                exc_info=True
-            )
+            logging.error(f"[{user_id}:{session_id}] TTS background task error: {e}", exc_info=True)
 
     async def process_turn(content_parts, state_delta=None):
         turn_complete_sent = False
         try:
-            # Accumulate final text for TTS
             final_text = ""
 
             async for event in agent_runner.run_async(
@@ -414,11 +464,9 @@ async def websocket_endpoint(websocket: WebSocket, user_id: str, session_id: str
                     event.model_dump_json(exclude_none=True, by_alias=True)
                 )
 
-                # Track whether the ADK already sent turnComplete
                 if getattr(event, 'turn_complete', False):
                     turn_complete_sent = True
 
-                # Collect text parts for voice generation
                 if event.content and event.content.parts:
                     for part in event.content.parts:
                         if part.text:
@@ -435,49 +483,38 @@ async def websocket_endpoint(websocket: WebSocket, user_id: str, session_id: str
                     pass  
             if final_text:
                 asyncio.create_task(_send_tts_audio(final_text))
+                # Trigger live telemetry streaming to BigQuery & WebSocket broadcast immediately upon turn completion
+                asyncio.create_task(_save_session_summary(user_id, session_id))
 
         except Exception as e:
-            logging.error(
-                f"[{user_id}:{session_id}] Turn processing error: {e}",
-                exc_info=True
-            )
+            logging.error(f"[{user_id}:{session_id}] Turn processing error: {e}", exc_info=True)
             error_msg = {"type": "error", "error": {"message": str(e)}}
             await websocket.send_text(json.dumps(error_msg))
         finally:
             if not turn_complete_sent:
-                await websocket.send_text(json.dumps({
-                    "turnComplete": True
-                }))
+                await websocket.send_text(json.dumps({"turnComplete": True}))
 
     try:
         while True:
             data = await websocket.receive()
-            
             if "bytes" in data:
-                # Accumulate audio chunks
                 audio_buffer.extend(data["bytes"])
-            
             elif "text" in data:
                 msg = json.loads(data["text"])
-                
-                # Check for preference sync messages first
                 if "tts_preference" in msg:
                     tts_enabled = msg["tts_preference"]
                     logging.info(f"[{user_id}:{session_id}] TTS preference updated: {'Enabled' if tts_enabled else 'Disabled'}")
                     continue
 
                 msg_type = msg.get("type")
-                
                 if msg_type == "text":
                     text_val = msg.get("text", "")
                     logging.info(f"[{user_id}:{session_id}] Received text turn: {text_val[:50]}...")
-                    
                     if text_val == "__START_SESSION__":
                         text_val = "Hello! I am Ahmad. Please introduce yourself as EMA and ask me how I am feeling today."
                     
                     parts = []
                     turn_state_delta = None
-                    
                     image_base64 = msg.get("image")
                     if image_base64:
                         mime_type = msg.get("mimeType", "image/jpeg")
@@ -486,18 +523,12 @@ async def websocket_endpoint(websocket: WebSocket, user_id: str, session_id: str
                             "LATEST_IMAGE_BASE64": image_base64,
                             "LATEST_IMAGE_MIME": mime_type,
                         }
-                        logging.info(
-                            f"[{user_id}:{session_id}] Image attached "
-                            f"({mime_type}, {len(image_data)} bytes). Passing via state_delta."
-                        )
-                            
                         parts.append(types.Part(inline_data=types.Blob(
                             mime_type=mime_type, 
                             data=image_data
                         )))
                         
                     parts.append(types.Part(text=text_val))
-                    
                     if pending_images:
                         parts.extend(pending_images)
                         pending_images = []
@@ -505,16 +536,13 @@ async def websocket_endpoint(websocket: WebSocket, user_id: str, session_id: str
                     await process_turn(parts, state_delta=turn_state_delta)
                 
                 elif msg_type == "image":
-                    logging.info(f"[{user_id}:{session_id}] Received image. Processing turn...")
                     image_data_base64 = msg["data"]
                     image_data = base64.b64decode(image_data_base64)
                     mime_type = msg.get("mimeType", "image/jpeg")
-                    
                     image_state_delta = {
                         "LATEST_IMAGE_BASE64": image_data_base64,
                         "LATEST_IMAGE_MIME": mime_type
                     }
-                    
                     image_part = types.Part(inline_data=types.Blob(
                         mime_type=mime_type, 
                         data=image_data
@@ -522,51 +550,42 @@ async def websocket_endpoint(websocket: WebSocket, user_id: str, session_id: str
                     await process_turn([image_part], state_delta=image_state_delta)
                 
                 elif msg_type == "audio_stop":
-                    logging.info(f"[{user_id}:{session_id}] Audio stop received. Processing audio turn...")
                     if audio_buffer:
                         await websocket.send_text(json.dumps({
-                            "inputTranscription": {
-                                "text": "_TRANSCRIBING_",
-                                "finished": False
-                            }
+                            "inputTranscription": {"text": "_TRANSCRIBING_", "finished": False}
                         }))
-                        
                         transcription = await transcribe_audio(bytes(audio_buffer))
                         audio_buffer.clear()
-                        
                         if transcription.strip():
                             await websocket.send_text(json.dumps({
                                 "inputTranscription": {"text": transcription, "finished": True}
                             }))
-                            
                             parts = []
                             if pending_images:
                                 parts.extend(pending_images)
                                 pending_images = []
-                            
                             parts.append(types.Part(text=transcription))
                             await process_turn(parts)
                         else:
                             await websocket.send_text(json.dumps({
                                 "inputTranscription": {"text": "(Unintelligible)", "finished": True}
                             }))
-                            logging.warning(f"[{user_id}:{session_id}] Audio transcription was empty.")
                     else:
                         logging.warning(f"[{user_id}:{session_id}] Audio stop received but buffer is empty.")
 
     except Exception as e:
         logging.info(f"[{user_id}:{session_id}] WebSocket disconnected or error: {e}")
     finally:
-        # Trigger closed-loop memory update automatically in the background
+        active_websockets.discard(websocket)
         asyncio.create_task(_save_session_summary(user_id, session_id))
 
 
 @app.websocket("/ws/grid/{user_id}/{session_id}")
 async def websocket_grid_endpoint(websocket: WebSocket, user_id: str, session_id: str):
     await websocket.accept()
+    active_websockets.add(websocket)
     logging.info(f"[Grid:{user_id}:{session_id}] WebSocket accepted.")
 
-    # Ensure session exists in the grid runner's session service
     session = await grid_runner.session_service.get_session(app_name=GRID_APP_NAME, user_id=user_id, session_id=session_id)
     if not session:
         await grid_runner.session_service.create_session(app_name=GRID_APP_NAME, user_id=user_id, session_id=session_id)
@@ -606,19 +625,22 @@ async def websocket_grid_endpoint(websocket: WebSocket, user_id: str, session_id
                     await process_turn([types.Part(text=text_val)])
     except Exception as e:
         logging.info(f"[Grid:{user_id}:{session_id}] WebSocket disconnected or error: {e}")
+    finally:
+        active_websockets.discard(websocket)
 
 
 from google.cloud import bigquery
 @app.get("/api/grid/dashboard")
 async def get_grid_dashboard():
     try:
-        # Clear credentials path if needed to ensure ADC fallback
         _creds_path = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
         if _creds_path and not os.path.exists(_creds_path):
             os.environ.pop("GOOGLE_APPLICATION_CREDENTIALS", None)
             
         client = bigquery.Client(project=PROJECT_ID)
         dataset = os.getenv("BIGQUERY_DATASET", "ema_grid")
+        
+        # 1. Symptom Telemetry
         query = f"""
         SELECT region, symptom_cluster, COUNT(*) as cases, MAX(timestamp) as last_report
         FROM `{PROJECT_ID}.{dataset}.symptom_reports`
@@ -626,17 +648,47 @@ async def get_grid_dashboard():
         GROUP BY region, symptom_cluster
         ORDER BY cases DESC
         """
-        query_job = client.query(query)
-        rows = list(query_job.result())
-        
-        telemetry = []
-        for r in rows:
-            telemetry.append({
-                "region": r.region,
-                "symptom_cluster": r.symptom_cluster,
-                "cases": r.cases,
-                "last_report": r.last_report.isoformat() if r.last_report else None
-            })
+        rows = list(client.query(query).result())
+        telemetry = [{
+            "region": r.region,
+            "symptom_cluster": r.symptom_cluster,
+            "cases": r.cases,
+            "last_report": r.last_report.isoformat() if r.last_report else None
+        } for r in rows]
+
+        # 2. Medical Supplies Inventory
+        supplies_query = f"""
+        SELECT region, item_name, current_stock, daily_burn_rate, days_of_supply, supply_status
+        FROM `{PROJECT_ID}.{dataset}.medical_supplies`
+        ORDER BY current_stock ASC
+        """
+        supplies_rows = list(client.query(supplies_query).result())
+        supplies = [{
+            "region": r.region,
+            "item_name": r.item_name,
+            "current_stock": r.current_stock,
+            "daily_burn_rate": r.daily_burn_rate,
+            "days_of_supply": r.days_of_supply,
+            "supply_status": r.supply_status
+        } for r in supplies_rows]
+
+        # 3. Hospital Capacity & Beds
+        hospital_query = f"""
+        SELECT region, facility_name, total_beds, occupied_beds, icu_beds_total, icu_beds_occupied, ventilators_available, occupancy_rate_pct
+        FROM `{PROJECT_ID}.{dataset}.hospital_capacity`
+        ORDER BY occupancy_rate_pct DESC
+        """
+        hospital_rows = list(client.query(hospital_query).result())
+        hospitals = [{
+            "region": r.region,
+            "facility_name": r.facility_name,
+            "total_beds": r.total_beds,
+            "occupied_beds": r.occupied_beds,
+            "icu_beds_total": r.icu_beds_total,
+            "icu_beds_occupied": r.icu_beds_occupied,
+            "ventilators_available": r.ventilators_available,
+            "occupancy_rate_pct": r.occupancy_rate_pct
+        } for r in hospital_rows]
             
         # Calculate staffing status based on cases
         staffing_alerts = []
@@ -666,11 +718,14 @@ async def get_grid_dashboard():
                 
         return {
             "telemetry": telemetry,
+            "supplies": supplies,
+            "hospitals": hospitals,
             "staffing_alerts": staffing_alerts
         }
     except Exception as e:
         logging.error(f"Error serving dashboard telemetry: {e}")
-        return {"telemetry": [], "staffing_alerts": []}
+        return {"telemetry": [], "supplies": [], "hospitals": [], "staffing_alerts": []}
+
 
 
 # --- 6. HEALTH CHECK & NOTIFICATIONS API ---
@@ -733,5 +788,6 @@ async def serve_spa(request: Request, full_path: str):
 
 if __name__ == "__main__":
     import uvicorn
-    port = int(os.environ.get("PORT", 8000))
-    uvicorn.run(app, host="0.0.0.0", port=port)
+    port = int(os.environ.get("PORT", 8080))
+    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=True)
+
